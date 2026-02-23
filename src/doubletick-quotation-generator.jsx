@@ -394,7 +394,18 @@ export default function App() {
   const download = () => {
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>DoubleTick Quotation — ${companyName}</title>
       <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-      <style>*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}body{margin:0;font-family:'Inter',sans-serif;}@page{margin:0;size:A4;}</style>
+      <style>
+        *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;box-sizing:border-box;}
+        body{margin:0;font-family:'Inter',sans-serif;}
+        @page{margin:0;size:A4;}
+        @media print{
+          .page{page-break-after:always;page-break-inside:avoid;}
+          .page:last-child{page-break-after:auto;}
+          table{page-break-inside:auto;}
+          tr{page-break-inside:avoid;page-break-after:auto;}
+          p{orphans:3;widows:3;}
+        }
+      </style>
     </head><body>${docRef.current.outerHTML}<script>window.onload=()=>{setTimeout(()=>{window.print();},800);}<\/script></body></html>`;
     const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
@@ -628,6 +639,17 @@ export default function App() {
             </table>
           </PrintSection>
 
+          <div style={{ padding: "13px 18px", background: "#f9fafb", borderRadius: 8, border: "1px solid #e5e7eb", fontSize: 12.5, color: "#374151", lineHeight: 1.75 }}>
+            <strong>Please Note: </strong>Your CSM will guide you through creating your first WhatsApp message template and share best practices to ensure campaign compliance and successful message delivery.
+          </div>
+        </div>
+        <PrintFooter />
+      </div>
+
+      {/* ── PAGE 4: Self-Service Resources ── */}
+      <div style={{ pageBreakAfter: "always" }}>
+        <PrintPageHeader title="Support & Onboarding" sub="Self-Service Resources" clientLogo={clientLogo} companyName={companyName} />
+        <div style={{ padding: "38px 56px" }}>
           <PrintSection title="Self-Service Resources">
             <p style={{ color: "#374151", lineHeight: 1.9, marginBottom: 12, fontSize: 13 }}>To maximise your use of the platform at any time, we encourage you to utilise the following self-service resources:</p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12 }}>
@@ -639,10 +661,6 @@ export default function App() {
               ))}
             </div>
           </PrintSection>
-
-          <div style={{ padding: "13px 18px", background: "#f9fafb", borderRadius: 8, border: "1px solid #e5e7eb", fontSize: 12.5, color: "#374151", lineHeight: 1.75 }}>
-            <strong>Please Note: </strong>Your CSM will guide you through creating your first WhatsApp message template and share best practices to ensure campaign compliance and successful message delivery.
-          </div>
         </div>
         <PrintFooter />
       </div>
