@@ -392,12 +392,21 @@ export default function App() {
   };
 
   const download = () => {
-    const w = window.open("", "_blank");
-    w.document.write(`<html><head><title>DoubleTick Quotation — ${companyName}</title>
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>DoubleTick Quotation — ${companyName}</title>
       <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
       <style>*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}body{margin:0;font-family:'Inter',sans-serif;}@page{margin:0;size:A4;}</style>
-    </head><body>${docRef.current.outerHTML}<script>window.onload=()=>{window.print();window.close();}<\/script></body></html>`);
-    w.document.close();
+    </head><body>${docRef.current.outerHTML}<script>window.onload=()=>{setTimeout(()=>{window.print();},800);}<\/script></body></html>`;
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const w = window.open(url, "_blank");
+    if (!w) {
+      // If popup blocked, fallback: download as HTML file
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `DoubleTick-Quotation-${companyName || "Client"}.html`;
+      a.click();
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
   };
 
   const STEPS = ["Client Info", "Plan & Billing", "Add-ons", "Review"];
