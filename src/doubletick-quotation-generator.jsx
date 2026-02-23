@@ -395,15 +395,16 @@ export default function App() {
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>DoubleTick Quotation — ${companyName}</title>
       <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
       <style>
-        *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;box-sizing:border-box;}
-        body{margin:0;font-family:'Inter',sans-serif;}
-        @page{margin:0;size:A4;}
-        @media print{
-          .page{page-break-after:always;page-break-inside:avoid;}
-          .page:last-child{page-break-after:auto;}
-          table{page-break-inside:auto;}
-          tr{page-break-inside:avoid;page-break-after:auto;}
-          p{orphans:3;widows:3;}
+        *, *::before, *::after { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; background: #fff; }
+        @page { margin: 0; size: A4; }
+        @media print {
+          body { width: 210mm; }
+          .page-break { break-before: page !important; }
+          .no-break { break-inside: avoid !important; }
+          .section-block { break-inside: avoid !important; }
+          tr { break-inside: avoid !important; }
+          thead { display: table-header-group; }
         }
       </style>
     </head><body>${docRef.current.outerHTML}<script>window.onload=()=>{setTimeout(()=>{window.print();},800);}<\/script></body></html>`;
@@ -429,7 +430,7 @@ export default function App() {
     <div ref={docRef} style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: "#1e2d3d", background: "#fff", maxWidth: 860, margin: "0 auto" }}>
 
       {/* ── PAGE 1: Cover + Overview ── */}
-      <div style={{ pageBreakAfter: "always" }}>
+      <div style={{ breakAfter: "page" }}>
         {/* Cover header */}
         <div style={{ background: `linear-gradient(135deg, ${T.pGreen} 0%, ${T.pGreenMid} 100%)`, padding: "38px 56px 30px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -498,10 +499,10 @@ export default function App() {
         <PrintFooter />
       </div>
 
-      {/* ── PAGE 2: Commercial Proposal ── */}
-      <div style={{ pageBreakAfter: "always" }}>
-        <PrintPageHeader title="Commercial Proposal" sub={`${companyName}  ·  ${effectiveBillingLabel} Billing`} clientLogo={clientLogo} companyName={companyName} />
-        <div style={{ padding: "38px 56px" }}>
+      {/* ── Pages 2+ flow naturally — PrintPageHeader forces page break ── */}
+
+      <PrintPageHeader title="Commercial Proposal" sub={`${companyName}  ·  ${effectiveBillingLabel} Billing`} clientLogo={clientLogo} companyName={companyName} />
+      <div style={{ padding: "38px 56px" }}>
           <PrintSection title={`${effectiveBillingLabel} Pricing Summary`}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
@@ -595,13 +596,9 @@ export default function App() {
             </div>
           </div>
         </div>
-        <PrintFooter />
-      </div>
 
-      {/* ── PAGE 3: Support & Onboarding ── */}
-      <div style={{ pageBreakAfter: "always" }}>
-        <PrintPageHeader title="Support & Onboarding" sub="Customer Success Programme" clientLogo={clientLogo} companyName={companyName} />
-        <div style={{ padding: "38px 56px" }}>
+      <PrintPageHeader title="Support & Onboarding" sub="Customer Success Programme" clientLogo={clientLogo} companyName={companyName} />
+      <div style={{ padding: "38px 56px" }}>
 
           {scope && (
             <PrintSection title="Scope of Work">
@@ -643,32 +640,9 @@ export default function App() {
             <strong>Please Note: </strong>Your CSM will guide you through creating your first WhatsApp message template and share best practices to ensure campaign compliance and successful message delivery.
           </div>
         </div>
-        <PrintFooter />
-      </div>
 
-      {/* ── PAGE 4: Self-Service Resources ── */}
-      <div style={{ pageBreakAfter: "always" }}>
-        <PrintPageHeader title="Support & Onboarding" sub="Self-Service Resources" clientLogo={clientLogo} companyName={companyName} />
-        <div style={{ padding: "38px 56px" }}>
-          <PrintSection title="Self-Service Resources">
-            <p style={{ color: "#374151", lineHeight: 1.9, marginBottom: 12, fontSize: 13 }}>To maximise your use of the platform at any time, we encourage you to utilise the following self-service resources:</p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12 }}>
-              {[["Video Courses & Help Center", "Step-by-step tutorials covering all platform features"], ["Live & Recorded Webinars", "Best-practice sessions hosted by the DoubleTick team"], ["Developer Documentation", "Comprehensive API guides for custom integrations"]].map(([t, d]) => (
-                <div key={t} style={{ padding: "13px 15px", background: "#f8fafc", borderRadius: 9, border: "1px solid #e2e8f0" }}>
-                  <div style={{ fontWeight: 600, color: T.pGreen, marginBottom: 5, fontSize: 12.5 }}>{t}</div>
-                  <div style={{ fontSize: 11.5, color: "#6b7280", lineHeight: 1.65 }}>{d}</div>
-                </div>
-              ))}
-            </div>
-          </PrintSection>
-        </div>
-        <PrintFooter />
-      </div>
-
-      {/* ── PAGE 4: Terms & Conditions ── */}
-      <div>
-        <PrintPageHeader title="Terms & Conditions" sub="Commercial Agreement" clientLogo={clientLogo} companyName={companyName} />
-        <div style={{ padding: "38px 56px" }}>
+      <PrintPageHeader title="Terms & Conditions" sub="Commercial Agreement" clientLogo={clientLogo} companyName={companyName} />
+      <div style={{ padding: "38px 56px" }}>
 
           <PrintSection title="Payment & Agreement Terms">
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -721,13 +695,12 @@ export default function App() {
             <div style={{ marginTop: 10, fontSize: 11.5, color: "#6b7280" }}>For rates outside India: <span style={{ color: T.pAccent }}>https://doubletick.io/conversation-cost</span></div>
           </PrintSection>
 
-          {/* Signature block — image already contains signature + name + title + company */}
+          {/* Signature block */}
           <div style={{ marginTop: 40, display: "flex", justifyContent: "flex-end" }}>
             <img src={SHIVAM_SIG} alt="Authorised Signatory" style={{ width: 260, objectFit: "contain", display: "block" }} />
           </div>
         </div>
         <PrintFooter />
-      </div>
     </div>
   );
 
@@ -1169,27 +1142,27 @@ export default function App() {
 }
 
 /* ─── Print sub-components ─── */
-function PrintPageHeader({ title, sub, clientLogo, companyName }) {
+function PrintPageHeader({ title, sub, clientLogo, companyName, isFirst = false }) {
   return (
-    <div style={{ background: `linear-gradient(135deg, #0b5235 0%, #0e7048 100%)`, padding: "15px 56px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-      <div>
-        <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 19, fontWeight: 600, color: "#fff" }}>{title}</div>
-        <div style={{ fontSize: 11.5, color: "rgba(255,255,255,0.6)", marginTop: 1 }}>{sub}</div>
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        {/* Client logo pill */}
-        {clientLogo ? (
-          <div style={{ background: "#ffffff", borderRadius: 7, padding: "5px 14px", display: "inline-flex", alignItems: "center", justifyContent: "center", minHeight: 36, minWidth: 70, boxShadow: "0 1px 6px rgba(0,0,0,0.15)" }}>
-            <img src={clientLogo} alt="Client" style={{ maxHeight: 24, maxWidth: 100, objectFit: "contain", display: "block" }} />
+    <div style={{ breakBefore: isFirst ? "auto" : "page" }}>
+      <div style={{ background: `linear-gradient(135deg, #0b5235 0%, #0e7048 100%)`, padding: "15px 56px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 19, fontWeight: 600, color: "#fff" }}>{title}</div>
+          <div style={{ fontSize: 11.5, color: "rgba(255,255,255,0.6)", marginTop: 1 }}>{sub}</div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {clientLogo ? (
+            <div style={{ background: "#ffffff", borderRadius: 7, padding: "5px 14px", display: "inline-flex", alignItems: "center", justifyContent: "center", minHeight: 36, minWidth: 70, boxShadow: "0 1px 6px rgba(0,0,0,0.15)" }}>
+              <img src={clientLogo} alt="Client" style={{ maxHeight: 24, maxWidth: 100, objectFit: "contain", display: "block" }} />
+            </div>
+          ) : companyName ? (
+            <div style={{ background: "#ffffff", borderRadius: 7, padding: "6px 14px", display: "inline-flex", alignItems: "center", justifyContent: "center", minHeight: 36 }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: "#0b5235", letterSpacing: 1, textTransform: "uppercase" }}>{companyName}</span>
+            </div>
+          ) : null}
+          <div style={{ background: "#ffffff", borderRadius: 7, padding: "5px 12px", display: "inline-flex", alignItems: "center", boxShadow: "0 1px 6px rgba(0,0,0,0.15)" }}>
+            <img src={DOUBLETICK_LOGO} alt="DoubleTick" style={{ height: 20, display: "block", objectFit: "contain" }} />
           </div>
-        ) : companyName ? (
-          <div style={{ background: "#ffffff", borderRadius: 7, padding: "6px 14px", display: "inline-flex", alignItems: "center", justifyContent: "center", minHeight: 36 }}>
-            <span style={{ fontSize: 10, fontWeight: 700, color: "#0b5235", letterSpacing: 1, textTransform: "uppercase" }}>{companyName}</span>
-          </div>
-        ) : null}
-        {/* DoubleTick logo pill */}
-        <div style={{ background: "#ffffff", borderRadius: 7, padding: "5px 12px", display: "inline-flex", alignItems: "center", boxShadow: "0 1px 6px rgba(0,0,0,0.15)" }}>
-          <img src={DOUBLETICK_LOGO} alt="DoubleTick" style={{ height: 20, display: "block", objectFit: "contain" }} />
         </div>
       </div>
     </div>
@@ -1198,7 +1171,7 @@ function PrintPageHeader({ title, sub, clientLogo, companyName }) {
 
 function PrintSection({ title, children }) {
   return (
-    <div style={{ marginBottom: 28 }}>
+    <div style={{ marginBottom: 28, breakInside: "avoid" }}>
       <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 16.5, fontWeight: 600, color: "#0b5235", paddingBottom: 7, borderBottom: "1.5px solid #a7f0c8", marginBottom: 14 }}>{title}</div>
       {children}
     </div>
@@ -1207,12 +1180,12 @@ function PrintSection({ title, children }) {
 
 function PrintFooter() {
   return (
-    <div style={{ background: "#f4f7f5", borderTop: "2px solid #1aad74", padding: "10px 56px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <div style={{ background: "#f4f7f5", borderTop: "2px solid #1aad74", padding: "10px 56px", display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 32 }}>
       <img src={DOUBLETICK_LOGO} alt="DoubleTick" style={{ height: 18, objectFit: "contain", display: "block" }} />
       <div style={{ fontSize: 10, color: "#9ca3af", letterSpacing: 0.5 }}>doubletick.io &nbsp;·&nbsp; Meta Business Partner &nbsp;·&nbsp; ISO 27001 Certified &nbsp;·&nbsp; EU GDPR Compliant</div>
     </div>
   );
-}
+}}
 
 /* ─── Builder UI helpers ─── */
 function StepHead({ title, sub }) {
