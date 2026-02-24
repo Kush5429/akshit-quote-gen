@@ -615,32 +615,37 @@ export default function App() {
             <p style={{ color: "#374151", lineHeight: 1.9, marginBottom: 10, fontSize: 13 }}>Every account will have a dedicated Customer Success Manager assigned for 60 days from the date of activation. The CSM will serve as your primary point of contact, assisting with account setup, onboarding, and ensuring a smooth implementation of the platform.</p>
             <p style={{ color: "#374151", lineHeight: 1.9, marginBottom: 14, fontSize: 13 }}>After the 60-day CSM period, you will receive a brief feedback form. You will continue to have full access to the DoubleTick Support Channel for ongoing assistance at any time.</p>
 
-            <div style={{ fontWeight: 600, color: "#1f2937", marginBottom: 10, fontSize: 13 }}>Your 60-Day CSM Support Includes:</div>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <tbody>
-                {[
-                  ["01", "1-on-1 Onboarding", "Setting up your WhatsApp number on the DoubleTick platform"],
-                  ["02", "Facebook Business Verification", "Step-by-step guidance through the Meta business verification process"],
-                  ["03", "Agents & WABA Setup", "Adding team agents and mapping WhatsApp Business Accounts to your dashboard"],
-                  ["04", "Use-Case Consultation", "Expert discussion on your business use-cases and feature recommendations tailored to your industry"],
-                  ["05", "Add-on Integration Support", "Assistance configuring and integrating optional add-on features"],
-                  ["06", "Platform Walkthrough", "A dedicated 15-minute guided walkthrough of the full DoubleTick platform"],
-                ].map(([num, title, desc]) => (
-                  <tr key={num} style={{ borderBottom: "1px solid #e5e7eb" }}>
-                    <td style={{ padding: "10px 12px", width: 36, fontWeight: 700, color: T.pAccent, fontSize: 13.5, verticalAlign: "top", fontFamily: "'EB Garamond', serif" }}>{num}</td>
-                    <td style={{ padding: "10px 14px", fontWeight: 600, color: "#111827", width: 195, verticalAlign: "top", fontSize: 12.5 }}>{title}</td>
-                    <td style={{ padding: "10px 14px", color: "#4b5563", fontSize: 12.5, lineHeight: 1.65 }}>{desc}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            {/* Wrap label + entire table together so they never split */}
+            <div style={{ breakInside: "avoid" }}>
+              <div style={{ fontWeight: 600, color: "#1f2937", marginBottom: 10, fontSize: 13 }}>Your 60-Day CSM Support Includes:</div>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <tbody>
+                  {[
+                    ["01", "1-on-1 Onboarding", "Setting up your WhatsApp number on the DoubleTick platform"],
+                    ["02", "Facebook Business Verification", "Step-by-step guidance through the Meta business verification process"],
+                    ["03", "Agents & WABA Setup", "Adding team agents and mapping WhatsApp Business Accounts to your dashboard"],
+                    ["04", "Use-Case Consultation", "Expert discussion on your business use-cases and feature recommendations tailored to your industry"],
+                    ["05", "Add-on Integration Support", "Assistance configuring and integrating optional add-on features"],
+                    ["06", "Platform Walkthrough", "A dedicated 15-minute guided walkthrough of the full DoubleTick platform"],
+                  ].map(([num, title, desc]) => (
+                    <tr key={num} style={{ borderBottom: "1px solid #e5e7eb", breakInside: "avoid" }}>
+                      <td style={{ padding: "10px 12px", width: 36, fontWeight: 700, color: T.pAccent, fontSize: 13.5, verticalAlign: "top", fontFamily: "'EB Garamond', serif" }}>{num}</td>
+                      <td style={{ padding: "10px 14px", fontWeight: 600, color: "#111827", width: 195, verticalAlign: "top", fontSize: 12.5 }}>{title}</td>
+                      <td style={{ padding: "10px 14px", color: "#4b5563", fontSize: 12.5, lineHeight: 1.65 }}>{desc}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </PrintSection>
 
-          <div style={{ padding: "13px 18px", background: "#f9fafb", borderRadius: 8, border: "1px solid #e5e7eb", fontSize: 12.5, color: "#374151", lineHeight: 1.75 }}>
+          <div style={{ padding: "13px 18px", background: "#f9fafb", borderRadius: 8, border: "1px solid #e5e7eb", fontSize: 12.5, color: "#374151", lineHeight: 1.75, breakInside: "avoid", marginBottom: 28 }}>
             <strong>Please Note: </strong>Your CSM will guide you through creating your first WhatsApp message template and share best practices to ensure campaign compliance and successful message delivery.
           </div>
 
-          <PrintSection title="Self-Service Resources">
+          {/* Self-Service Resources — flows directly after CSM note, no separate page */}
+          <div style={{ breakInside: "avoid", marginBottom: 28 }}>
+            <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 16.5, fontWeight: 600, color: "#0b5235", paddingBottom: 7, borderBottom: "1.5px solid #a7f0c8", marginBottom: 14 }}>Self-Service Resources</div>
             <p style={{ color: "#374151", lineHeight: 1.9, marginBottom: 12, fontSize: 13 }}>To maximise your use of the platform at any time, we encourage you to utilise the following self-service resources:</p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12 }}>
               {[["Video Courses & Help Center", "Step-by-step tutorials covering all platform features"], ["Live & Recorded Webinars", "Best-practice sessions hosted by the DoubleTick team"], ["Developer Documentation", "Comprehensive API guides for custom integrations"]].map(([t, d]) => (
@@ -650,7 +655,7 @@ export default function App() {
                 </div>
               ))}
             </div>
-          </PrintSection>
+          </div>
         </div>
 
       <PrintPageHeader title="Terms & Conditions" sub="Commercial Agreement" clientLogo={clientLogo} companyName={companyName} />
