@@ -639,6 +639,18 @@ export default function App() {
           <div style={{ padding: "13px 18px", background: "#f9fafb", borderRadius: 8, border: "1px solid #e5e7eb", fontSize: 12.5, color: "#374151", lineHeight: 1.75 }}>
             <strong>Please Note: </strong>Your CSM will guide you through creating your first WhatsApp message template and share best practices to ensure campaign compliance and successful message delivery.
           </div>
+
+          <PrintSection title="Self-Service Resources">
+            <p style={{ color: "#374151", lineHeight: 1.9, marginBottom: 12, fontSize: 13 }}>To maximise your use of the platform at any time, we encourage you to utilise the following self-service resources:</p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12 }}>
+              {[["Video Courses & Help Center", "Step-by-step tutorials covering all platform features"], ["Live & Recorded Webinars", "Best-practice sessions hosted by the DoubleTick team"], ["Developer Documentation", "Comprehensive API guides for custom integrations"]].map(([t, d]) => (
+                <div key={t} style={{ padding: "13px 15px", background: "#f8fafc", borderRadius: 9, border: "1px solid #e2e8f0" }}>
+                  <div style={{ fontWeight: 600, color: T.pGreen, marginBottom: 5, fontSize: 12.5 }}>{t}</div>
+                  <div style={{ fontSize: 11.5, color: "#6b7280", lineHeight: 1.65 }}>{d}</div>
+                </div>
+              ))}
+            </div>
+          </PrintSection>
         </div>
 
       <PrintPageHeader title="Terms & Conditions" sub="Commercial Agreement" clientLogo={clientLogo} companyName={companyName} />
