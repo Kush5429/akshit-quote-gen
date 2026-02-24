@@ -502,7 +502,7 @@ export default function App() {
       {/* ── Pages 2+ flow naturally — PrintPageHeader forces page break ── */}
 
       <PrintPageHeader title="Commercial Proposal" sub={`${companyName}  ·  ${effectiveBillingLabel} Billing`} clientLogo={clientLogo} companyName={companyName} />
-      <div style={{ padding: "38px 56px" }}>
+      <div style={{ padding: "24px 56px" }}>
           <PrintSection title={`${effectiveBillingLabel} Pricing Summary`}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
@@ -598,7 +598,7 @@ export default function App() {
         </div>
 
       <PrintPageHeader title="Support & Onboarding" sub="Customer Success Programme" clientLogo={clientLogo} companyName={companyName} />
-      <div style={{ padding: "38px 56px" }}>
+      <div style={{ padding: "24px 56px" }}>
 
           {scope && (
             <PrintSection title="Scope of Work">
@@ -612,12 +612,11 @@ export default function App() {
             <div style={{ padding: "12px 18px", background: "#edfbf3", borderRadius: 8, border: "1px solid #a7f0c8", marginBottom: 14 }}>
               <div style={{ fontWeight: 600, color: T.pGreen, fontSize: 12.5 }}>60-Day Dedicated CSM Policy &mdash; Effective 3 October 2025</div>
             </div>
-            <p style={{ color: "#374151", lineHeight: 1.9, marginBottom: 10, fontSize: 13 }}>Every account will have a dedicated Customer Success Manager assigned for 60 days from the date of activation. The CSM will serve as your primary point of contact, assisting with account setup, onboarding, and ensuring a smooth implementation of the platform.</p>
-            <p style={{ color: "#374151", lineHeight: 1.9, marginBottom: 14, fontSize: 13 }}>After the 60-day CSM period, you will receive a brief feedback form. You will continue to have full access to the DoubleTick Support Channel for ongoing assistance at any time.</p>
+            <p style={{ color: "#374151", lineHeight: 1.8, marginBottom: 8, fontSize: 12.5 }}>Every account will have a dedicated Customer Success Manager assigned for 60 days from the date of activation. The CSM will serve as your primary point of contact, assisting with account setup, onboarding, and ensuring a smooth implementation of the platform.</p>
+            <p style={{ color: "#374151", lineHeight: 1.8, marginBottom: 12, fontSize: 12.5 }}>After the 60-day CSM period, you will receive a brief feedback form. You will continue to have full access to the DoubleTick Support Channel for ongoing assistance at any time.</p>
 
-            {/* Wrap label + entire table together so they never split */}
             <div style={{ breakInside: "avoid" }}>
-              <div style={{ fontWeight: 600, color: "#1f2937", marginBottom: 10, fontSize: 13 }}>Your 60-Day CSM Support Includes:</div>
+              <div style={{ fontWeight: 600, color: "#1f2937", marginBottom: 8, fontSize: 12.5 }}>Your 60-Day CSM Support Includes:</div>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <tbody>
                   {[
@@ -629,9 +628,9 @@ export default function App() {
                     ["06", "Platform Walkthrough", "A dedicated 15-minute guided walkthrough of the full DoubleTick platform"],
                   ].map(([num, title, desc]) => (
                     <tr key={num} style={{ borderBottom: "1px solid #e5e7eb", breakInside: "avoid" }}>
-                      <td style={{ padding: "10px 12px", width: 36, fontWeight: 700, color: T.pAccent, fontSize: 13.5, verticalAlign: "top", fontFamily: "'EB Garamond', serif" }}>{num}</td>
-                      <td style={{ padding: "10px 14px", fontWeight: 600, color: "#111827", width: 195, verticalAlign: "top", fontSize: 12.5 }}>{title}</td>
-                      <td style={{ padding: "10px 14px", color: "#4b5563", fontSize: 12.5, lineHeight: 1.65 }}>{desc}</td>
+                      <td style={{ padding: "8px 12px", width: 36, fontWeight: 700, color: T.pAccent, fontSize: 13, verticalAlign: "top", fontFamily: "'EB Garamond', serif" }}>{num}</td>
+                      <td style={{ padding: "8px 14px", fontWeight: 600, color: "#111827", width: 195, verticalAlign: "top", fontSize: 12 }}>{title}</td>
+                      <td style={{ padding: "8px 14px", color: "#4b5563", fontSize: 12, lineHeight: 1.6 }}>{desc}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -639,19 +638,19 @@ export default function App() {
             </div>
           </PrintSection>
 
-          <div style={{ padding: "13px 18px", background: "#f9fafb", borderRadius: 8, border: "1px solid #e5e7eb", fontSize: 12.5, color: "#374151", lineHeight: 1.75, breakInside: "avoid", marginBottom: 28 }}>
+          <div style={{ padding: "11px 16px", background: "#f9fafb", borderRadius: 8, border: "1px solid #e5e7eb", fontSize: 12, color: "#374151", lineHeight: 1.7, breakInside: "avoid", marginBottom: 20 }}>
             <strong>Please Note: </strong>Your CSM will guide you through creating your first WhatsApp message template and share best practices to ensure campaign compliance and successful message delivery.
           </div>
 
-          {/* Self-Service Resources — flows directly after CSM note, no separate page */}
-          <div style={{ breakInside: "avoid", marginBottom: 28 }}>
-            <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 16.5, fontWeight: 600, color: "#0b5235", paddingBottom: 7, borderBottom: "1.5px solid #a7f0c8", marginBottom: 14 }}>Self-Service Resources</div>
-            <p style={{ color: "#374151", lineHeight: 1.9, marginBottom: 12, fontSize: 13 }}>To maximise your use of the platform at any time, we encourage you to utilise the following self-service resources:</p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12 }}>
+          {/* Self-Service Resources */}
+          <div style={{ breakInside: "avoid", marginBottom: 20 }}>
+            <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 16, fontWeight: 600, color: "#0b5235", paddingBottom: 6, borderBottom: "1.5px solid #a7f0c8", marginBottom: 12 }}>Self-Service Resources</div>
+            <p style={{ color: "#374151", lineHeight: 1.8, marginBottom: 10, fontSize: 12.5 }}>To maximise your use of the platform at any time, we encourage you to utilise the following self-service resources:</p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
               {[["Video Courses & Help Center", "Step-by-step tutorials covering all platform features"], ["Live & Recorded Webinars", "Best-practice sessions hosted by the DoubleTick team"], ["Developer Documentation", "Comprehensive API guides for custom integrations"]].map(([t, d]) => (
-                <div key={t} style={{ padding: "13px 15px", background: "#f8fafc", borderRadius: 9, border: "1px solid #e2e8f0" }}>
-                  <div style={{ fontWeight: 600, color: T.pGreen, marginBottom: 5, fontSize: 12.5 }}>{t}</div>
-                  <div style={{ fontSize: 11.5, color: "#6b7280", lineHeight: 1.65 }}>{d}</div>
+                <div key={t} style={{ padding: "11px 13px", background: "#f8fafc", borderRadius: 9, border: "1px solid #e2e8f0" }}>
+                  <div style={{ fontWeight: 600, color: T.pGreen, marginBottom: 4, fontSize: 12 }}>{t}</div>
+                  <div style={{ fontSize: 11, color: "#6b7280", lineHeight: 1.6 }}>{d}</div>
                 </div>
               ))}
             </div>
@@ -659,7 +658,7 @@ export default function App() {
         </div>
 
       <PrintPageHeader title="Terms & Conditions" sub="Commercial Agreement" clientLogo={clientLogo} companyName={companyName} />
-      <div style={{ padding: "38px 56px" }}>
+      <div style={{ padding: "24px 56px" }}>
 
           <PrintSection title="Payment & Agreement Terms">
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -1188,7 +1187,7 @@ function PrintPageHeader({ title, sub, clientLogo, companyName, isFirst = false 
 
 function PrintSection({ title, children }) {
   return (
-    <div style={{ marginBottom: 28, breakInside: "avoid" }}>
+    <div style={{ marginBottom: 20, breakInside: "avoid" }}>
       <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 16.5, fontWeight: 600, color: "#0b5235", paddingBottom: 7, borderBottom: "1.5px solid #a7f0c8", marginBottom: 14 }}>{title}</div>
       {children}
     </div>
@@ -1197,7 +1196,7 @@ function PrintSection({ title, children }) {
 
 function PrintFooter() {
   return (
-    <div style={{ background: "#f4f7f5", borderTop: "2px solid #1aad74", padding: "10px 56px", display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 32 }}>
+    <div style={{ background: "#f4f7f5", borderTop: "2px solid #1aad74", padding: "10px 56px", display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
       <img src={DOUBLETICK_LOGO} alt="DoubleTick" style={{ height: 18, objectFit: "contain", display: "block" }} />
       <div style={{ fontSize: 10, color: "#9ca3af", letterSpacing: 0.5 }}>doubletick.io &nbsp;·&nbsp; Meta Business Partner &nbsp;·&nbsp; ISO 27001 Certified &nbsp;·&nbsp; EU GDPR Compliant</div>
     </div>
