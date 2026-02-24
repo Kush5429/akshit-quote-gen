@@ -1202,7 +1202,7 @@ function PrintFooter() {
       <div style={{ fontSize: 10, color: "#9ca3af", letterSpacing: 0.5 }}>doubletick.io &nbsp;·&nbsp; Meta Business Partner &nbsp;·&nbsp; ISO 27001 Certified &nbsp;·&nbsp; EU GDPR Compliant</div>
     </div>
   );
-}}
+}
 
 /* ─── Builder UI helpers ─── */
 function StepHead({ title, sub }) {
