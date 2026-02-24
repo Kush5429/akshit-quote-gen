@@ -603,51 +603,63 @@ export default function App() {
         <PrintPageHeader title="Support & Onboarding" sub="Customer Success Programme" clientLogo={clientLogo} companyName={companyName} />
         <div style={{ padding: "24px 56px" }}>
 
+          {/* Scope of Work */}
           {scope && (
-            <PrintSection title="Scope of Work">
-              <div style={{ padding: "14px 18px", background: "#f8fafc", borderRadius: 9, border: "1px solid #e2e8f0" }}>
-                <p style={{ color: "#374151", whiteSpace: "pre-wrap", margin: 0, lineHeight: 1.85, fontSize: 13 }}>{scope}</p>
+            <div style={{ marginBottom: 22 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                <div style={{ width: 4, height: 24, background: T.pGreen, borderRadius: 2, flexShrink: 0 }} />
+                <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 17, fontWeight: 700, color: "#0b5235", letterSpacing: 0.2 }}>Scope of Work</div>
               </div>
-            </PrintSection>
+              <div style={{ padding: "14px 18px", background: "#f8fafc", borderRadius: 9, border: "1px solid #e2e8f0" }}>
+                <p style={{ color: "#374151", whiteSpace: "pre-wrap", margin: 0, lineHeight: 1.85, fontSize: 12.5 }}>{scope}</p>
+              </div>
+            </div>
           )}
 
-          <PrintSection title="Customer Success Manager (CSM) Programme">
-            <div style={{ padding: "12px 18px", background: "#edfbf3", borderRadius: 8, border: "1px solid #a7f0c8", marginBottom: 14 }}>
-              <div style={{ fontWeight: 600, color: T.pGreen, fontSize: 12.5 }}>60-Day Dedicated CSM Policy &mdash; Effective 3 October 2025</div>
-            </div>
-            <p style={{ color: "#374151", lineHeight: 1.8, marginBottom: 8, fontSize: 12.5 }}>Every account will have a dedicated Customer Success Manager assigned for 60 days from the date of activation. The CSM will serve as your primary point of contact, assisting with account setup, onboarding, and ensuring a smooth implementation of the platform.</p>
-            <p style={{ color: "#374151", lineHeight: 1.8, marginBottom: 12, fontSize: 12.5 }}>After the 60-day CSM period, you will receive a brief feedback form. You will continue to have full access to the DoubleTick Support Channel for ongoing assistance at any time.</p>
+          {/* CSM Programme header */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <div style={{ width: 4, height: 24, background: T.pGreen, borderRadius: 2, flexShrink: 0 }} />
+            <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 17, fontWeight: 700, color: "#0b5235", letterSpacing: 0.2 }}>Customer Success Manager (CSM) Programme</div>
+          </div>
 
-            <div style={{ breakInside: "avoid" }}>
-              <div style={{ fontWeight: 600, color: "#1f2937", marginBottom: 8, fontSize: 12.5 }}>Your 60-Day CSM Support Includes:</div>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <tbody>
-                  {[
-                    ["01", "1-on-1 Onboarding", "Setting up your WhatsApp number on the DoubleTick platform"],
-                    ["02", "Facebook Business Verification", "Step-by-step guidance through the Meta business verification process"],
-                    ["03", "Agents & WABA Setup", "Adding team agents and mapping WhatsApp Business Accounts to your dashboard"],
-                    ["04", "Use-Case Consultation", "Expert discussion on your business use-cases and feature recommendations tailored to your industry"],
-                    ["05", "Add-on Integration Support", "Assistance configuring and integrating optional add-on features"],
-                    ["06", "Platform Walkthrough", "A dedicated 15-minute guided walkthrough of the full DoubleTick platform"],
-                  ].map(([num, title, desc]) => (
-                    <tr key={num} style={{ borderBottom: "1px solid #e5e7eb", breakInside: "avoid" }}>
-                      <td style={{ padding: "8px 12px", width: 36, fontWeight: 700, color: T.pAccent, fontSize: 13, verticalAlign: "top", fontFamily: "'EB Garamond', serif" }}>{num}</td>
-                      <td style={{ padding: "8px 14px", fontWeight: 600, color: "#111827", width: 195, verticalAlign: "top", fontSize: 12 }}>{title}</td>
-                      <td style={{ padding: "8px 14px", color: "#4b5563", fontSize: 12, lineHeight: 1.6 }}>{desc}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </PrintSection>
+          <div style={{ padding: "10px 16px", background: "#edfbf3", borderRadius: 8, border: "1px solid #a7f0c8", marginBottom: 12 }}>
+            <div style={{ fontWeight: 600, color: T.pGreen, fontSize: 12.5 }}>60-Day Dedicated CSM Policy &mdash; Effective 3 October 2025</div>
+          </div>
+          <p style={{ color: "#374151", lineHeight: 1.8, marginBottom: 7, fontSize: 12.5 }}>Every account will have a dedicated Customer Success Manager assigned for 60 days from the date of activation. The CSM will serve as your primary point of contact, assisting with account setup, onboarding, and ensuring a smooth implementation of the platform.</p>
+          <p style={{ color: "#374151", lineHeight: 1.8, marginBottom: 12, fontSize: 12.5 }}>After the 60-day CSM period, you will receive a brief feedback form. You will continue to have full access to the DoubleTick Support Channel for ongoing assistance at any time.</p>
 
-          <div style={{ padding: "11px 16px", background: "#f9fafb", borderRadius: 8, border: "1px solid #e5e7eb", fontSize: 12, color: "#374151", lineHeight: 1.7, breakInside: "avoid", marginBottom: 20 }}>
-            <strong>Please Note: </strong>Your CSM will guide you through creating your first WhatsApp message template and share best practices to ensure campaign compliance and successful message delivery.
+          <div style={{ breakInside: "avoid" }}>
+            <div style={{ fontWeight: 600, color: "#1f2937", marginBottom: 8, fontSize: 12.5 }}>Your 60-Day CSM Support Includes:</div>
+            <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #e5e7eb", borderRadius: 8, overflow: "hidden" }}>
+              <tbody>
+                {[
+                  ["01", "1-on-1 Onboarding", "Setting up your WhatsApp number on the DoubleTick platform"],
+                  ["02", "Facebook Business Verification", "Step-by-step guidance through the Meta business verification process"],
+                  ["03", "Agents & WABA Setup", "Adding team agents and mapping WhatsApp Business Accounts to your dashboard"],
+                  ["04", "Use-Case Consultation", "Expert discussion on your business use-cases and feature recommendations tailored to your industry"],
+                  ["05", "Add-on Integration Support", "Assistance configuring and integrating optional add-on features"],
+                  ["06", "Platform Walkthrough", "A dedicated 15-minute guided walkthrough of the full DoubleTick platform"],
+                ].map(([num, title, desc], i) => (
+                  <tr key={num} style={{ background: i % 2 === 0 ? "#fff" : "#f8fafc", borderBottom: "1px solid #e5e7eb", breakInside: "avoid" }}>
+                    <td style={{ padding: "9px 12px", width: 38, fontWeight: 700, color: T.pGreen, fontSize: 14, verticalAlign: "middle", fontFamily: "'EB Garamond', serif", textAlign: "center", borderRight: "1px solid #e5e7eb" }}>{num}</td>
+                    <td style={{ padding: "9px 14px", fontWeight: 600, color: "#111827", width: 180, verticalAlign: "middle", fontSize: 12, borderRight: "1px solid #e5e7eb" }}>{title}</td>
+                    <td style={{ padding: "9px 14px", color: "#4b5563", fontSize: 12, lineHeight: 1.6 }}>{desc}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div style={{ padding: "10px 16px", background: "#fffbeb", borderRadius: 8, border: "1px solid #fcd34d", fontSize: 12, color: "#374151", lineHeight: 1.7, breakInside: "avoid", marginTop: 14, marginBottom: 18 }}>
+            <strong style={{ color: "#92400e" }}>Please Note: </strong>Your CSM will guide you through creating your first WhatsApp message template and share best practices to ensure campaign compliance and successful message delivery.
           </div>
 
           {/* Self-Service Resources */}
-          <div style={{ breakInside: "avoid", marginBottom: 0 }}>
-            <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 16, fontWeight: 600, color: "#0b5235", paddingBottom: 6, borderBottom: "1.5px solid #a7f0c8", marginBottom: 12 }}>Self-Service Resources</div>
+          <div style={{ breakInside: "avoid" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+              <div style={{ width: 4, height: 24, background: T.pGreen, borderRadius: 2, flexShrink: 0 }} />
+              <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 17, fontWeight: 700, color: "#0b5235", letterSpacing: 0.2 }}>Self-Service Resources</div>
+            </div>
             <p style={{ color: "#374151", lineHeight: 1.8, marginBottom: 10, fontSize: 12.5 }}>To maximise your use of the platform at any time, we encourage you to utilise the following self-service resources:</p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
               {[["Video Courses & Help Center", "Step-by-step tutorials covering all platform features"], ["Live & Recorded Webinars", "Best-practice sessions hosted by the DoubleTick team"], ["Developer Documentation", "Comprehensive API guides for custom integrations"]].map(([t, d]) => (
