@@ -303,7 +303,7 @@ export default function App() {
   const [customAddonsList, setCustomAddonsList] = useState([]); // [{label, price, billing}]
   const [newCustomAddon, setNewCustomAddon] = useState({ label: "", price: "", billing: "custom" });
   const [scope, setScope] = useState("");
-  const [discount, setDiscount] = useState(0); // 0–25%
+  const [discount, setDiscount] = useState(0); // 0–30%
   const [preview, setPreview] = useState(false);
   const logoRef = useRef();
   const docRef = useRef();
@@ -968,7 +968,7 @@ export default function App() {
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: discount > 0 ? 14 : 0 }}>
                     <div>
                       <div style={{ fontSize: 13.5, fontWeight: 600, color: T.text }}>Apply Discount</div>
-                      <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 2 }}>Maximum 25% — applies to plan price only</div>
+                      <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 2 }}>Maximum 30% — applies to plan price only</div>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       {/* Quick preset buttons */}
@@ -983,12 +983,12 @@ export default function App() {
                     <div style={{ display: "flex", alignItems: "center", gap: 12, paddingTop: 12, borderTop: `1px solid ${T.border}` }}>
                       <div style={{ flex: 1, position: "relative" }}>
                         <input
-                          type="range" min={0} max={25} step={1} value={discount}
+                          type="range" min={0} max={30} step={1} value={discount}
                           onChange={e => setDiscount(Number(e.target.value))}
                           style={{ width: "100%", accentColor: T.green, cursor: "pointer" }}
                         />
                         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: T.textMuted, marginTop: 2 }}>
-                          <span>0%</span><span>5%</span><span>10%</span><span>15%</span><span>20%</span><span>25%</span>
+                          <span>0%</span><span>5%</span><span>10%</span><span>15%</span><span>20%</span><span>25%</span><span>30%</span>
                         </div>
                       </div>
                       <div style={{ textAlign: "right", flexShrink: 0, minWidth: 90 }}>
