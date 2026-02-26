@@ -598,12 +598,10 @@ export default function App() {
         </div>
       </div>{/* end page 2 */}
 
-      {/* ── Page 3: Support & Onboarding ── */}
+      {/* ── Page 3: Scope of Work ── */}
       <div style={{ breakBefore: "page" }}>
-        <PrintPageHeader title="Support & Onboarding" sub="Customer Success Programme" clientLogo={clientLogo} companyName={companyName} />
+        <PrintPageHeader title="Support & Onboarding" sub="Scope of Work" clientLogo={clientLogo} companyName={companyName} />
         <div style={{ padding: "24px 56px" }}>
-
-          {/* Scope of Work */}
           {scope && (
             <div style={{ marginBottom: 22 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
@@ -615,6 +613,13 @@ export default function App() {
               </div>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* ── Page 4: CSM Programme + Self-Service ── */}
+      <div style={{ breakBefore: "page" }}>
+        <PrintPageHeader title="Support & Onboarding" sub="Customer Success Programme" clientLogo={clientLogo} companyName={companyName} />
+        <div style={{ padding: "24px 56px" }}>
 
           {/* CSM Programme header */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
