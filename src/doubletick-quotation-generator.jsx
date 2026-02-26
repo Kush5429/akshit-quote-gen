@@ -311,10 +311,11 @@ export default function App() {
   const planData = PLANS[plan];
   const billingLabel = { monthly: "Monthly", quarterly: "Quarterly", yearly: "Yearly" }[billing];
 
-  // Enterprise monthly AND yearly → always custom price input
+  // Enterprise monthly, quarterly AND yearly → always custom price input
   const isEnterpriseMonthly = plan === "enterprise" && billing === "monthly";
   const isEnterpriseYearly = plan === "enterprise" && billing === "yearly";
-  const isEnterpriseCustom = isEnterpriseMonthly || isEnterpriseYearly;
+  const isEnterpriseQuarterly = plan === "enterprise" && billing === "quarterly";
+  const isEnterpriseCustom = isEnterpriseMonthly || isEnterpriseYearly || isEnterpriseQuarterly;
   const effectiveBilling = billing;
   const effectiveBillingLabel = { monthly: "Monthly", quarterly: "Quarterly", yearly: "Yearly" }[billing];
 
@@ -863,6 +864,11 @@ export default function App() {
                       {plan === "enterprise" ? "Enterprise monthly pricing is custom — enter the agreed amount above." : "Monthly billing for Starter / Pro requires management approval before sending."}
                     </div>
                   )}
+                  {billing === "quarterly" && plan === "enterprise" && (
+                    <div style={{ marginTop: 10, padding: "9px 14px", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 8, fontSize: 12, color: "#f59e0b" }}>
+                      Enterprise quarterly pricing is custom — enter the agreed quarterly amount above.
+                    </div>
+                  )}
                   {billing === "yearly" && plan === "enterprise" && (
                     <div style={{ marginTop: 10, padding: "9px 14px", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 8, fontSize: 12, color: "#f59e0b" }}>
                       Enterprise yearly pricing is custom — enter the agreed annual amount above.
@@ -874,7 +880,7 @@ export default function App() {
                     <div style={{ display: "grid", gap: 10, marginTop: 4 }}>
                       {Object.entries(PLANS).map(([key, p]) => {
                         const isEnt = key === "enterprise";
-                        const isEntCustom = isEnt && (billing === "monthly" || billing === "yearly");
+                        const isEntCustom = isEnt && (billing === "monthly" || billing === "yearly" || billing === "quarterly");
                         const dispBilling = billing;
                         const basePrice = isEntCustom
                           ? (parseInt(enterpriseCustomPrice.replace(/[^0-9]/g, ""), 10) || null)
@@ -884,6 +890,7 @@ export default function App() {
                           : 0;
                         const displayPrice = basePrice != null ? basePrice + aiExtra : null;
                         const isSelected = plan === key;
+                        const billingShort = billing === "monthly" ? "mo" : billing === "quarterly" ? "qtr" : "yr";
                         return (
                           <div key={key}>
                             <div onClick={() => setPlan(key)} style={{ padding: "16px 20px", borderRadius: 10, border: `1.5px solid ${isSelected ? T.green : T.border}`, background: isSelected ? "rgba(23,160,102,0.06)" : T.surface, cursor: "pointer", transition: "all 0.15s" }}>
@@ -892,7 +899,7 @@ export default function App() {
                                   <div style={{ fontWeight: 700, fontSize: 15, color: isSelected ? T.greenLt : T.text }}>{p.name}</div>
                                   <div style={{ fontSize: 12, color: T.textMuted, marginTop: 3 }}>{p.subtitle}</div>
                                 </div>
-                                {/* Enterprise monthly or yearly → custom input; quarterly → fixed ₹30,000 */}
+                                {/* Enterprise → always custom input */}
                                 {isEnt && isEntCustom ? (
                                   <div style={{ marginLeft: 16, flexShrink: 0, textAlign: "right" }}>
                                     <div style={{ fontSize: 11, color: T.textMuted, marginBottom: 5 }}>Custom {billing} price</div>
@@ -902,10 +909,10 @@ export default function App() {
                                         value={enterpriseCustomPrice}
                                         onChange={e => setEnterpriseCustomPrice(e.target.value)}
                                         onClick={e => e.stopPropagation()}
-                                        placeholder="e.g. 10,000"
+                                        placeholder="e.g. 30,000"
                                         style={{ width: 110, padding: "6px 10px", background: "#0d1520", border: `1.5px solid ${T.green}`, borderRadius: 7, color: T.white, fontSize: 14, fontWeight: 700, outline: "none", fontFamily: "inherit" }}
                                       />
-                                      <span style={{ fontSize: 11, color: T.textMuted }}>/{billing === "monthly" ? "mo" : "yr"}</span>
+                                      <span style={{ fontSize: 11, color: T.textMuted }}>/{billingShort}</span>
                                     </div>
                                     {enterpriseCustomPrice && discount > 0 && (
                                       <div style={{ fontSize: 11, color: T.textMuted, marginTop: 3, textDecoration: "line-through" }}>
@@ -918,7 +925,7 @@ export default function App() {
                                         {!discount && `+GST · ₹${fmtINR(Math.round((parseInt(enterpriseCustomPrice.replace(/[^0-9]/g,""),10)||0) * 1.18))} total`}
                                       </div>
                                     )}
-                                    {isEnt && <div style={{ fontSize: 10.5, color: enterpriseAIBots ? T.greenLt : T.textMuted, marginTop: 3 }}>{enterpriseAIBots ? `+₹${billing === "yearly" ? "1,80,000" : "15,000"} AI Bots` : "without AI Bots"}</div>}
+                                    {isEnt && <div style={{ fontSize: 10.5, color: enterpriseAIBots ? T.greenLt : T.textMuted, marginTop: 3 }}>{enterpriseAIBots ? `+₹${billing === "yearly" ? "1,80,000" : billing === "quarterly" ? "45,000" : "15,000"} AI Bots` : "without AI Bots"}</div>}
                                   </div>
                                 ) : (
                                   <div style={{ textAlign: "right", marginLeft: 16, flexShrink: 0 }}>
