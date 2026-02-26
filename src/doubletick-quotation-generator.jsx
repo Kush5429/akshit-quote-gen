@@ -972,7 +972,7 @@ export default function App() {
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       {/* Quick preset buttons */}
-                      {[0, 5, 10, 15, 20, 25].map(v => (
+                      {[0, 5, 10, 15, 20, 25, 30].map(v => (
                         <button key={v} onClick={() => setDiscount(v)} style={{ padding: "5px 11px", borderRadius: 6, border: `1.5px solid ${discount === v ? T.green : T.border}`, background: discount === v ? "rgba(23,160,102,0.15)" : "transparent", color: discount === v ? T.greenLt : T.textSub, cursor: "pointer", fontSize: 12, fontWeight: 600, transition: "all 0.12s" }}>
                           {v === 0 ? "None" : `${v}%`}
                         </button>
