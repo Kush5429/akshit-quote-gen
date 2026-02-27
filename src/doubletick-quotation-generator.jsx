@@ -970,21 +970,37 @@ export default function App() {
                       <div style={{ fontSize: 13.5, fontWeight: 600, color: T.text }}>Apply Discount</div>
                       <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 2 }}>Maximum 30% — applies to plan price only</div>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
                       {/* Quick preset buttons */}
                       {[0, 5, 10, 15, 20, 25, 30].map(v => (
                         <button key={v} onClick={() => setDiscount(v)} style={{ padding: "5px 11px", borderRadius: 6, border: `1.5px solid ${discount === v ? T.green : T.border}`, background: discount === v ? "rgba(23,160,102,0.15)" : "transparent", color: discount === v ? T.greenLt : T.textSub, cursor: "pointer", fontSize: 12, fontWeight: 600, transition: "all 0.12s" }}>
                           {v === 0 ? "None" : `${v}%`}
                         </button>
                       ))}
+                      {/* Custom % input */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 4, border: `1.5px solid ${![0,5,10,15,20,25,30].includes(discount) && discount > 0 ? T.green : T.border}`, borderRadius: 6, padding: "4px 8px", background: ![0,5,10,15,20,25,30].includes(discount) && discount > 0 ? "rgba(23,160,102,0.15)" : "transparent" }}>
+                        <input
+                          type="number" min={0} max={30} step={0.1}
+                          value={discount === 0 ? "" : discount}
+                          onChange={e => {
+                            const val = parseFloat(e.target.value);
+                            if (e.target.value === "") { setDiscount(0); return; }
+                            if (!isNaN(val) && val >= 0 && val <= 30) setDiscount(Math.round(val * 10) / 10);
+                          }}
+                          placeholder="e.g. 12.5"
+                          onClick={e => e.stopPropagation()}
+                          style={{ width: 60, background: "transparent", border: "none", outline: "none", color: T.greenLt, fontSize: 12, fontWeight: 600, fontFamily: "inherit" }}
+                        />
+                        <span style={{ fontSize: 12, color: T.textMuted }}>%</span>
+                      </div>
                     </div>
                   </div>
                   {discount > 0 && (
                     <div style={{ display: "flex", alignItems: "center", gap: 12, paddingTop: 12, borderTop: `1px solid ${T.border}` }}>
                       <div style={{ flex: 1, position: "relative" }}>
                         <input
-                          type="range" min={0} max={30} step={1} value={discount}
-                          onChange={e => setDiscount(Number(e.target.value))}
+                          type="range" min={0} max={30} step={0.1} value={discount}
+                          onChange={e => setDiscount(Math.round(Number(e.target.value) * 10) / 10)}
                           style={{ width: "100%", accentColor: T.green, cursor: "pointer" }}
                         />
                         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: T.textMuted, marginTop: 2 }}>
