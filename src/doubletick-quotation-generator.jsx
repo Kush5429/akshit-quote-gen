@@ -1,9 +1,7 @@
 import { useState, useRef } from "react";
 
-const DOUBLETICK_LOGO = "data:image/jpeg;base64,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";
-
+const DOUBLETICK_LOGO = "/dt logo.jpg";
 const SHIVAM_SIG = "/Shivam Sign.jpg";
-
 
 const PLANS = {
   starter: {
@@ -93,7 +91,6 @@ const baseInput = {
   boxSizing: "border-box", lineHeight: 1.5,
 };
 
-/* ─── Scope of Work structured renderer ─── */
 function renderScopeLines(scopeText) {
   return scopeText.split("\n").map((line, i) => {
     const trimmed = line.trim();
@@ -281,7 +278,7 @@ export default function App() {
         <PrintFooter />
       </div>
 
-      {/* PAGE 2: Commercial Proposal */}
+      {/* PAGE 2 */}
       <div style={{ breakBefore: "page" }}>
         <PrintPageHeader title="Commercial Proposal" sub={`${companyName}  ·  ${effectiveBillingLabel} Billing`} clientLogo={clientLogo} companyName={companyName} />
         <div style={{ padding: "24px 56px" }}>
@@ -300,7 +297,6 @@ export default function App() {
                   <td style={pTdl}>
                     DoubleTick {planData.name} Plan &mdash; {effectiveBillingLabel}
                     {discount > 0 && <div style={{ fontSize: 11, color: T.pAccent, marginTop: 2, fontWeight: 600 }}>{discount}% discount applied · Original: ₹{fmtINR(planPriceOriginal)}</div>}
-                    {/* FIX: divide by billing months to get correct /month display */}
                     {plan === "enterprise" && (
                       <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>
                         {(() => {
@@ -344,7 +340,6 @@ export default function App() {
             </table>
             <div style={{ marginTop: 8, fontSize: 11, color: "#9ca3af", fontStyle: "italic" }}>* GST at 18% is applicable additionally on all taxable line items.</div>
           </PrintSection>
-
           <PrintSection title={`DoubleTick ${planData.name} Plan — Included Features`}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 30px" }}>
               {planData.features.map((f, i) => (
@@ -355,7 +350,6 @@ export default function App() {
               ))}
             </div>
           </PrintSection>
-
           <div style={{ padding: "16px 20px", background: "#fffbeb", borderRadius: 9, border: "1px solid #fcd34d", fontSize: 12.5 }}>
             <div style={{ fontWeight: 700, color: "#78350f", marginBottom: 10, fontSize: 12, letterSpacing: 0.5, textTransform: "uppercase" }}>Important Notes</div>
             <div style={{ display: "grid", gap: 8 }}>
@@ -374,7 +368,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* PAGE 3: Scope of Work */}
+      {/* PAGE 3 */}
       <div style={{ breakBefore: "page" }}>
         <PrintPageHeader title="Support & Onboarding" sub="Scope of Work" clientLogo={clientLogo} companyName={companyName} />
         <div style={{ padding: "24px 56px" }}>
@@ -384,7 +378,6 @@ export default function App() {
                 <div style={{ width: 4, height: 24, background: T.pGreen, borderRadius: 2, flexShrink: 0 }} />
                 <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 17, fontWeight: 700, color: "#0b5235", letterSpacing: 0.2 }}>Scope of Work</div>
               </div>
-              {/* FIX: structured bullet/header rendering */}
               <div style={{ padding: "16px 20px", background: "#f8fafc", borderRadius: 9, border: "1px solid #e2e8f0" }}>
                 {renderScopeLines(scope)}
               </div>
@@ -393,7 +386,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* PAGE 4: CSM Programme */}
+      {/* PAGE 4 */}
       <div style={{ breakBefore: "page" }}>
         <PrintPageHeader title="Support & Onboarding" sub="Customer Success Programme" clientLogo={clientLogo} companyName={companyName} />
         <div style={{ padding: "24px 56px" }}>
@@ -448,7 +441,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* PAGE 5: Terms & Conditions */}
+      {/* PAGE 5 */}
       <div style={{ breakBefore: "page" }}>
         <PrintPageHeader title="Terms & Conditions" sub="Commercial Agreement" clientLogo={clientLogo} companyName={companyName} />
         <div style={{ padding: "24px 56px" }}>
@@ -470,7 +463,6 @@ export default function App() {
               </tbody>
             </table>
           </PrintSection>
-
           <PrintSection title="WhatsApp API Message Costs">
             <p style={{ color: "#374151", lineHeight: 1.9, marginBottom: 14, fontSize: 13 }}>WhatsApp message costs are charged separately by Meta and are effective as of <strong>January 1, 2026</strong>. These are prepaid — the client must recharge the DoubleTick Wallet directly. Rates are subject to change per Meta's pricing policy. No setup fees are applicable.</p>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -503,7 +495,7 @@ export default function App() {
             <div style={{ marginTop: 10, fontSize: 11.5, color: "#6b7280" }}>For rates outside India: <span style={{ color: T.pAccent }}>https://doubletick.io/conversation-cost</span></div>
           </PrintSection>
 
-          {/* ── SIGNATURE BLOCK — FIX: includes name, title, company under signature ── */}
+          {/* ── SIGNATURE BLOCK — single, correct instance ── */}
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 28 }}>
             <div style={{ textAlign: "center", minWidth: 260 }}>
               <img
@@ -610,7 +602,7 @@ export default function App() {
                 <FField label="Billing Cycle">
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginTop: 4 }}>
                     {[["monthly", "Monthly", "Custom / Approval"], ["quarterly", "Quarterly", "Standard"], ["yearly", "Yearly", "Best Value"]].map(([b, label, badge]) => (
-                      <div key={b} onClick={() => { setBilling(b); }} style={{ padding: "13px 12px", borderRadius: 10, border: `1.5px solid ${billing === b ? T.green : T.border}`, background: billing === b ? "rgba(23,160,102,0.07)" : "#0d1520", cursor: "pointer", textAlign: "center", transition: "all 0.15s" }}>
+                      <div key={b} onClick={() => setBilling(b)} style={{ padding: "13px 12px", borderRadius: 10, border: `1.5px solid ${billing === b ? T.green : T.border}`, background: billing === b ? "rgba(23,160,102,0.07)" : "#0d1520", cursor: "pointer", textAlign: "center", transition: "all 0.15s" }}>
                         <div style={{ fontWeight: 600, fontSize: 14, color: billing === b ? T.greenLt : T.textSub }}>{label}</div>
                         <div style={{ fontSize: 10.5, color: billing === b ? T.greenLt : T.textMuted, marginTop: 3, fontWeight: 500 }}>{badge}</div>
                       </div>
@@ -625,9 +617,7 @@ export default function App() {
                     <div style={{ display: "grid", gap: 10, marginTop: 4 }}>
                       {Object.entries(PLANS).map(([key, p]) => {
                         const isEnt = key === "enterprise";
-                        const basePrice = isEnt
-                          ? (parseInt(enterpriseCustomPrice.replace(/[^0-9]/g, ""), 10) || null)
-                          : (p[billing] ?? p.quarterly);
+                        const basePrice = isEnt ? (parseInt(enterpriseCustomPrice.replace(/[^0-9]/g, ""), 10) || null) : (p[billing] ?? p.quarterly);
                         const aiExtra = isEnt && enterpriseAIBots ? (billing === "quarterly" ? 45000 : billing === "yearly" ? 180000 : 15000) : 0;
                         const displayPrice = basePrice != null ? basePrice + aiExtra : null;
                         const isSelected = plan === key;
@@ -648,8 +638,8 @@ export default function App() {
                                       <input value={enterpriseCustomPrice} onChange={e => setEnterpriseCustomPrice(e.target.value)} onClick={e => e.stopPropagation()} placeholder="e.g. 45,000" style={{ width: 110, padding: "6px 10px", background: "#0d1520", border: `1.5px solid ${T.green}`, borderRadius: 7, color: T.white, fontSize: 14, fontWeight: 700, outline: "none", fontFamily: "inherit" }} />
                                       <span style={{ fontSize: 11, color: T.textMuted }}>/{billingShort}</span>
                                     </div>
-                                    {enterpriseCustomPrice && <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>{!discount && `+GST · ₹${fmtINR(Math.round((parseInt(enterpriseCustomPrice.replace(/[^0-9]/g,""),10)||0) * 1.18))} total`}</div>}
-                                    <div style={{ fontSize: 10.5, color: enterpriseAIBots ? T.greenLt : T.textMuted, marginTop: 3 }}>{enterpriseAIBots ? `+₹${billing === "yearly" ? "1,80,000" : billing === "quarterly" ? "45,000" : "15,000"} AI Bots` : "without AI Bots"}</div>
+                                    {enterpriseCustomPrice && <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>{!discount && `+GST · ₹${fmtINR(Math.round((parseInt(enterpriseCustomPrice.replace(/[^0-9]/g,""),10)||0)*1.18))} total`}</div>}
+                                    <div style={{ fontSize: 10.5, color: enterpriseAIBots ? T.greenLt : T.textMuted, marginTop: 3 }}>{enterpriseAIBots ? `+₹${billing==="yearly"?"1,80,000":billing==="quarterly"?"45,000":"15,000"} AI Bots` : "without AI Bots"}</div>
                                   </div>
                                 ) : (
                                   <div style={{ textAlign: "right", marginLeft: 16, flexShrink: 0 }}>
@@ -679,7 +669,6 @@ export default function App() {
                     </div>
                   </FField>
                 </div>
-
                 <div style={{ marginTop: 18, padding: "16px 18px", background: T.surfaceHigh, borderRadius: 11, border: `1px solid ${discount > 0 ? T.green : T.border}`, transition: "border-color 0.2s" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: discount > 0 ? 14 : 0 }}>
                     <div>
@@ -762,16 +751,15 @@ export default function App() {
                     </div>
                   </div>
                 ))}
-
                 <div style={{ marginTop: 8, marginBottom: 16 }}>
                   <div style={{ fontSize: 10.5, color: T.textMuted, textTransform: "uppercase", letterSpacing: 1.8, fontWeight: 700, marginBottom: 10, paddingBottom: 6, borderBottom: `1px solid ${T.border}` }}>Custom Add-on</div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto auto", gap: 8, alignItems: "center" }}>
-                    <input value={newCustomAddon.label} onChange={e => setNewCustomAddon(p => ({ ...p, label: e.target.value }))} placeholder="Add-on name / description" style={{ ...baseInput, fontSize: 13, padding: "9px 12px" }} onClick={e => e.stopPropagation()} />
-                    <input value={newCustomAddon.price} onChange={e => setNewCustomAddon(p => ({ ...p, price: e.target.value }))} placeholder="Price (e.g. 5000)" style={{ ...baseInput, fontSize: 13, padding: "9px 12px", width: 140 }} onClick={e => e.stopPropagation()} />
-                    <select value={newCustomAddon.billing} onChange={e => setNewCustomAddon(p => ({ ...p, billing: e.target.value }))} style={{ ...baseInput, fontSize: 13, padding: "9px 12px", width: 130, cursor: "pointer" }} onClick={e => e.stopPropagation()}>
+                    <input value={newCustomAddon.label} onChange={e => setNewCustomAddon(p => ({ ...p, label: e.target.value }))} placeholder="Add-on name / description" style={{ ...baseInput, fontSize: 13, padding: "9px 12px" }} />
+                    <input value={newCustomAddon.price} onChange={e => setNewCustomAddon(p => ({ ...p, price: e.target.value }))} placeholder="Price (e.g. 5000)" style={{ ...baseInput, fontSize: 13, padding: "9px 12px", width: 140 }} />
+                    <select value={newCustomAddon.billing} onChange={e => setNewCustomAddon(p => ({ ...p, billing: e.target.value }))} style={{ ...baseInput, fontSize: 13, padding: "9px 12px", width: 130, cursor: "pointer" }}>
                       <option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="yearly">Yearly</option><option value="one-time">One-Time</option><option value="custom">Custom</option>
                     </select>
-                    <button onClick={e => { e.stopPropagation(); if (!newCustomAddon.label.trim()) return; setCustomAddonsList(p => [...p, { ...newCustomAddon, id: `custom_${Date.now()}` }]); setNewCustomAddon({ label: "", price: "", billing: "custom" }); }} style={{ background: T.green, border: "none", borderRadius: 8, color: "#fff", fontWeight: 700, fontSize: 13, padding: "9px 16px", cursor: "pointer", whiteSpace: "nowrap" }}>+ Add</button>
+                    <button onClick={() => { if (!newCustomAddon.label.trim()) return; setCustomAddonsList(p => [...p, { ...newCustomAddon, id: `custom_${Date.now()}` }]); setNewCustomAddon({ label: "", price: "", billing: "custom" }); }} style={{ background: T.green, border: "none", borderRadius: 8, color: "#fff", fontWeight: 700, fontSize: 13, padding: "9px 16px", cursor: "pointer", whiteSpace: "nowrap" }}>+ Add</button>
                   </div>
                   {customAddonsList.length > 0 && (
                     <div style={{ marginTop: 10, display: "grid", gap: 6 }}>
@@ -780,14 +768,13 @@ export default function App() {
                           <div style={{ fontSize: 13, color: T.text }}>{ca.label}</div>
                           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                             <span style={{ fontSize: 12, color: T.greenLt, fontWeight: 600 }}>{ca.price ? `₹${Number(ca.price).toLocaleString("en-IN")}` : "—"} · {ca.billing}</span>
-                            <button onClick={e => { e.stopPropagation(); setCustomAddonsList(p => p.filter(x => x.id !== ca.id)); }} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: 13, padding: 0 }}>✕</button>
+                            <button onClick={() => setCustomAddonsList(p => p.filter(x => x.id !== ca.id))} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: 13, padding: 0 }}>✕</button>
                           </div>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
-
                 {(addons.length > 0 || customAddonsList.length > 0) && (
                   <div style={{ marginTop: 18, padding: "16px 18px", background: T.surfaceHigh, borderRadius: 10, border: `1px solid ${T.border}` }}>
                     <div style={{ fontSize: 10.5, color: T.textMuted, textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 600, marginBottom: 12 }}>Running Total</div>
