@@ -502,28 +502,6 @@ export default function App() {
             <div style={{ marginTop: 10, fontSize: 11.5, color: "#6b7280" }}>For rates outside India: <span style={{ color: T.pAccent }}>https://doubletick.io/conversation-cost</span></div>
           </PrintSection>
 
-          {/* ── SIGNATURE BLOCK — FIX: includes name, title, company under signature ── */}
-          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 28 }}>
-            <div style={{ textAlign: "center", minWidth: 260 }}>
-              <img
-                src={SHIVAM_SIG}
-                alt="Authorised Signatory"
-                style={{ width: 220, objectFit: "contain", display: "block", margin: "0 auto" }}
-              />
-              <div style={{ borderTop: "1.5px solid #374151", marginTop: 4, paddingTop: 10 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#0b5235" }}>Shivam Mittal</div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: "#111827", marginTop: 3 }}>Co-Founder — Head of Business</div>
-                <div style={{ fontSize: 11.5, color: "#4b5563", marginTop: 2 }}>Apport Software Solutions Private Limited</div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-        <PrintFooter />
-      </div>
-    </div>
-  );
-
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", minHeight: "100vh", background: T.bg, color: T.text }}>
       <style>{`
