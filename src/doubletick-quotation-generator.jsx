@@ -1,23 +1,18 @@
 import { useState, useRef } from "react";
 
-const DOUBLETICK_LOGO = "data:image/jpeg;base64,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";
+const DOUBLETICK_LOGO = "data:image/jpeg;base64,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";
 
-const SHIVAM_SIG = "data:image/jpeg;base64,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";
+const SHIVAM_SIG = "data:image/jpeg;base64,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";
 
 
 // ─── Pricing as provided (no discounts applied) ───
-// Monthly: management approval required
-// Quarterly: standard
-// Yearly: annual contract
-// Enterprise: quarterly-only, priced per month × 3
-
 const PLANS = {
   starter: {
     name: "Starter",
     subtitle: "Bulk Messaging + Google Sheets",
-    monthly: 5700,      // ₹5,700/mo (approval based)
-    quarterly: 12900,   // ₹12,900/qtr
-    yearly: 30000,      // ₹30,000/yr
+    monthly: 5700,
+    quarterly: 12900,
+    yearly: 30000,
     monthlyNote: "Requires management approval",
     features: [
       "Team inbox (5 agents free)",
@@ -36,9 +31,9 @@ const PLANS = {
   pro: {
     name: "Pro",
     subtitle: "Bulk Messaging + Chatbots + Integrations",
-    monthly: 8700,      // ₹8,700/mo (approval based)
-    quarterly: 18000,   // ₹18,000/qtr
-    yearly: 42000,      // ₹42,000/yr
+    monthly: 8700,
+    quarterly: 18000,
+    yearly: 42000,
     monthlyNote: "Requires management approval",
     features: [
       "Everything in Starter plan",
@@ -57,11 +52,9 @@ const PLANS = {
   enterprise: {
     name: "Enterprise",
     subtitle: "Full Suite — Quarterly Only",
-    // Enterprise is quarterly only, billed as ₹10,000/month × 3 = ₹30,000/qtr
-    // With AI Bots: ₹10,000 + ₹15,000 = ₹25,000/month × 3 = ₹75,000/qtr
-    monthly: null,      // not available monthly
-    quarterly: 30000,   // ₹10,000/mo base × 3 (without AI bots)
-    yearly: 120000,     // ₹10,000/mo × 12
+    monthly: null,
+    quarterly: 30000,
+    yearly: 120000,
     quarterlyNote: "₹10,000/month × 3 months — without AI Bots",
     yearlyNote: "₹10,000/month × 12 months — without AI Bots",
     features: [
@@ -93,11 +86,6 @@ const PLANS = {
   },
 };
 
-// Enterprise AI Bots add-on: ₹15,000/month — quarterly = ₹45,000, yearly = ₹180,000
-// WhatsApp Calling quarterly: ₹9,000 (calling cost taken separately)
-// WhatsApp Calling yearly: ₹36,000 (calling cost taken separately)
-
-// ─── ADDON GROUPS for UI rendering ───
 const ADDON_GROUPS = [
   {
     group: "Platform Features",
@@ -270,7 +258,6 @@ const ADDON_GROUPS = [
   },
 ];
 
-// Flat list for calculations
 const ADDONS = ADDON_GROUPS.flatMap(g => g.items);
 
 const fmtINR = n => new Intl.NumberFormat("en-IN").format(n);
@@ -285,7 +272,71 @@ const T = {
   pGreen: "#0b5235", pGreenMid: "#0e7048", pAccent: "#1aad74",
 };
 
-const baseInput = { width: "100%", padding: "11px 15px", background: "#0d1520", border: `1.5px solid ${T.border}`, borderRadius: 8, color: T.text, fontSize: 14, outline: "none", fontFamily: "inherit", boxSizing: "border-box", lineHeight: 1.5 };
+const baseInput = {
+  width: "100%", padding: "11px 15px", background: "#0d1520",
+  border: `1.5px solid ${T.border}`, borderRadius: 8, color: T.text,
+  fontSize: 14, outline: "none", fontFamily: "inherit",
+  boxSizing: "border-box", lineHeight: 1.5,
+};
+
+/* ─── Scope of Work renderer — parses plain text into structured PDF elements ─── */
+function renderScopeLines(scopeText) {
+  return scopeText.split("\n").map((line, i) => {
+    const trimmed = line.trim();
+
+    // Empty line → spacer
+    if (!trimmed) {
+      return <div key={i} style={{ height: 8 }} />;
+    }
+
+    // Section header: ends with colon, or wrapped in asterisks (e.g. *For Sales:*)
+    const isHeader = /^[A-Za-z*\s()&/,+-]+:$/.test(trimmed) || /^\*[^*]+\*$/.test(trimmed);
+
+    if (isHeader) {
+      return (
+        <div key={i} style={{
+          fontWeight: 700,
+          color: "#0b5235",
+          fontSize: 13,
+          marginTop: i === 0 ? 0 : 12,
+          marginBottom: 5,
+          fontFamily: "'EB Garamond', serif",
+          letterSpacing: 0.2,
+          borderBottom: "1px solid #d1fae5",
+          paddingBottom: 3,
+        }}>
+          {trimmed.replace(/^\*|\*$/g, "")}
+        </div>
+      );
+    }
+
+    // Bullet line — strip any leading -, •, *, numbers+dot
+    const bulletStripped = trimmed.replace(/^[-•*]\s*/, "").replace(/^\d+\.\s*/, "");
+
+    return (
+      <div key={i} style={{
+        display: "flex",
+        gap: 9,
+        alignItems: "flex-start",
+        marginBottom: 5,
+        paddingLeft: 2,
+      }}>
+        <span style={{
+          color: "#1aad74",
+          flexShrink: 0,
+          fontSize: 9,
+          marginTop: 5,
+          fontWeight: 700,
+        }}>▶</span>
+        <span style={{
+          color: "#374151",
+          fontSize: 12.5,
+          lineHeight: 1.8,
+        }}>{bulletStripped}</span>
+      </div>
+    );
+  });
+}
 
 /* ─── Main component ─── */
 export default function App() {
@@ -299,11 +350,11 @@ export default function App() {
   const [enterpriseAIBots, setEnterpriseAIBots] = useState(false);
   const [enterpriseCustomPrice, setEnterpriseCustomPrice] = useState("");
   const [addons, setAddons] = useState([]);
-  const [iframeSelections, setIframeSelections] = useState({}); // {addon_id: "standard"|"iframe"}
-  const [customAddonsList, setCustomAddonsList] = useState([]); // [{label, price, billing}]
+  const [iframeSelections, setIframeSelections] = useState({});
+  const [customAddonsList, setCustomAddonsList] = useState([]);
   const [newCustomAddon, setNewCustomAddon] = useState({ label: "", price: "", billing: "custom" });
   const [scope, setScope] = useState("");
-  const [discount, setDiscount] = useState(0); // 0–30%
+  const [discount, setDiscount] = useState(0);
   const [preview, setPreview] = useState(false);
   const logoRef = useRef();
   const docRef = useRef();
@@ -311,7 +362,6 @@ export default function App() {
   const planData = PLANS[plan];
   const billingLabel = { monthly: "Monthly", quarterly: "Quarterly", yearly: "Yearly" }[billing];
 
-  // Enterprise monthly, quarterly AND yearly → always custom price input
   const isEnterpriseMonthly = plan === "enterprise" && billing === "monthly";
   const isEnterpriseYearly = plan === "enterprise" && billing === "yearly";
   const isEnterpriseQuarterly = plan === "enterprise" && billing === "quarterly";
@@ -319,12 +369,10 @@ export default function App() {
   const effectiveBilling = billing;
   const effectiveBillingLabel = { monthly: "Monthly", quarterly: "Quarterly", yearly: "Yearly" }[billing];
 
-  // Plan base price — enterprise monthly/yearly use custom input; quarterly uses fixed ₹30,000
   const basePlanPrice = isEnterpriseCustom
     ? (parseInt(enterpriseCustomPrice.replace(/[^0-9]/g, ""), 10) || 0)
     : (planData[billing] ?? planData.quarterly);
 
-  // Enterprise AI bots add-on: +₹15,000/mo (×3 for qtr, ×12 for yr)
   const aiBotsAddon = plan === "enterprise" && enterpriseAIBots
     ? (billing === "quarterly" ? 45000 : billing === "yearly" ? 180000 : 15000)
     : 0;
@@ -335,28 +383,19 @@ export default function App() {
   const selAddons = ADDONS.filter(a => addons.includes(a.id));
 
   const getAddonPrice = (a) => {
-    // Check if iframe variant selected for this addon
     const useIframe = iframeSelections[a.id] === "iframe" && a.iframeYearly != null;
-    if (useIframe) {
-      // iframe is yearly-only pricing
-      return a.iframeYearly;
-    }
-    // Standard pricing: exact match for billing cycle
+    if (useIframe) return a.iframeYearly;
     if (a[effectiveBilling] != null) return a[effectiveBilling];
-    // Monthly plan, addon has no monthly → use quarterly
     if (effectiveBilling === "monthly" && a.quarterly != null) return a.quarterly;
-    // Fallback to yearly for yearly-only addons
     if (a.yearly != null) return a.yearly;
     return null;
   };
 
-  // Billing suffix auto-matches plan billing
   const billingTag = { monthly: "monthly", quarterly: "quarterly", yearly: "yearly" }[effectiveBilling];
 
   const getAddonDisplayPrice = (a) => {
     const useIframe = iframeSelections[a.id] === "iframe" && a.iframeYearly != null;
     if (useIframe) return `₹${fmtINR(a.iframeYearly)}/yr (with iframe)`;
-    // Use displayPrice for current billing
     if (a.displayPrice) {
       const raw = a.displayPrice[effectiveBilling] ?? a.displayPrice.yearly ?? a.custom ?? "—";
       return raw;
@@ -365,19 +404,18 @@ export default function App() {
     return p != null ? `₹${fmtINR(p)} (${billingTag})` : (a.custom ?? "—");
   };
 
-  // For print PDF: clean price label with billing tag auto-appended
   const getAddonPrintLabel = (a) => {
     const useIframe = iframeSelections[a.id] === "iframe" && a.iframeYearly != null;
     if (useIframe) return `INR ${fmtINR(a.iframeYearly)}/- (yearly · with iframe)`;
     const p = getAddonPrice(a);
     if (p === 0) return "Free";
     if (p == null) return a.custom ?? "—";
-    // yearly-only addons
     if (a[effectiveBilling] == null && a.yearly != null && effectiveBilling !== "yearly") {
       return `INR ${fmtINR(p)}/- (yearly)`;
     }
     return `INR ${fmtINR(p)}/- (${billingTag})`;
   };
+
   const numericAddons = selAddons.filter(a => getAddonPrice(a) != null);
   const customAddons = selAddons.filter(a => getAddonPrice(a) == null);
   const addonSum = numericAddons.reduce((s, a) => s + getAddonPrice(a), 0)
@@ -413,7 +451,6 @@ export default function App() {
     const url = URL.createObjectURL(blob);
     const w = window.open(url, "_blank");
     if (!w) {
-      // If popup blocked, fallback: download as HTML file
       const a = document.createElement("a");
       a.href = url;
       a.download = `DoubleTick-Quotation-${companyName || "Client"}.html`;
@@ -432,12 +469,10 @@ export default function App() {
 
       {/* ── PAGE 1: Cover + Overview ── */}
       <div style={{ breakAfter: "page" }}>
-        {/* Cover header */}
         <div style={{ background: `linear-gradient(135deg, ${T.pGreen} 0%, ${T.pGreenMid} 100%)`, padding: "38px 56px 30px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
               <div style={{ fontSize: 9.5, letterSpacing: 3.5, color: "rgba(255,255,255,0.45)", textTransform: "uppercase", marginBottom: 14, fontWeight: 500 }}>APPORT SOFTWARE SOLUTIONS PVT LTD</div>
-              {/* DoubleTick logo pill */}
               <div style={{ display: "inline-flex", alignItems: "center", background: "rgba(255,255,255,0.97)", borderRadius: 9, padding: "8px 18px", marginBottom: 18 }}>
                 <img src={DOUBLETICK_LOGO} alt="DoubleTick" style={{ height: 28, display: "block", objectFit: "contain" }} />
               </div>
@@ -447,7 +482,6 @@ export default function App() {
                 CIN: U72900MH2021PTC354389
               </div>
             </div>
-            {/* Client logo — right side */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "center" }}>
               {clientLogo ? (
                 <div style={{ background: "#ffffff", borderRadius: 12, padding: "14px 22px", display: "flex", alignItems: "center", justifyContent: "center", minWidth: 150, minHeight: 72, boxShadow: "0 2px 12px rgba(0,0,0,0.18)", border: "1px solid rgba(255,255,255,0.6)" }}>
@@ -462,7 +496,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* "Prepared for" strip */}
         <div style={{ background: "#edfbf3", borderBottom: "2px solid #a7f0c8", padding: "18px 56px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ fontSize: 9.5, letterSpacing: 2.5, color: "#5aac88", textTransform: "uppercase", marginBottom: 5, fontWeight: 600 }}>Prepared For</div>
@@ -477,7 +510,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Body */}
         <div style={{ padding: "38px 56px" }}>
           <PrintSection title="Company Overview">
             <p style={{ color: "#374151", lineHeight: 1.9, margin: 0, fontSize: 13 }}>QuickSell is a conversational commerce company empowering global brands with scalable personal commerce and relationship-led sales on WhatsApp. Started in 2017 with a vision of enabling global brands to win more customers using simple yet robust technology on mobile, today we have over 7,000+ customers across 100+ countries using our technology to grow digitally.</p>
@@ -523,11 +555,16 @@ export default function App() {
                         {discount}% discount applied · Original: ₹{fmtINR(planPriceOriginal)}
                       </div>
                     )}
+                    {/* ── BUG FIX 2: Show correct /month base price by dividing by billing period ── */}
                     {plan === "enterprise" && (
                       <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>
-                        {enterpriseAIBots
-                          ? `Without AI Bots: ₹${fmtINR(basePlanPrice - aiBotsAddon)}/mo + AI Bots: ₹15,000/mo`
-                          : `Base: ₹${fmtINR(basePlanPrice)}/month`}
+                        {(() => {
+                          const billingMonths = billing === "yearly" ? 12 : billing === "quarterly" ? 3 : 1;
+                          const baseMonthly = Math.round(basePlanPrice / billingMonths);
+                          return enterpriseAIBots
+                            ? `Without AI Bots: ₹${fmtINR(baseMonthly)}/mo + AI Bots: ₹15,000/mo`
+                            : `Base: ₹${fmtINR(baseMonthly)}/month`;
+                        })()}
                       </div>
                     )}
                   </td>
@@ -597,7 +634,7 @@ export default function App() {
             </div>
           </div>
         </div>
-      </div>{/* end page 2 */}
+      </div>
 
       {/* ── Page 3: Scope of Work ── */}
       <div style={{ breakBefore: "page" }}>
@@ -609,8 +646,9 @@ export default function App() {
                 <div style={{ width: 4, height: 24, background: T.pGreen, borderRadius: 2, flexShrink: 0 }} />
                 <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 17, fontWeight: 700, color: "#0b5235", letterSpacing: 0.2 }}>Scope of Work</div>
               </div>
-              <div style={{ padding: "14px 18px", background: "#f8fafc", borderRadius: 9, border: "1px solid #e2e8f0" }}>
-                <p style={{ color: "#374151", whiteSpace: "pre-wrap", margin: 0, lineHeight: 1.85, fontSize: 12.5 }}>{scope}</p>
+              {/* ── BUG FIX 1: Parse scope text into structured bullets + section headers ── */}
+              <div style={{ padding: "16px 20px", background: "#f8fafc", borderRadius: 9, border: "1px solid #e2e8f0" }}>
+                {renderScopeLines(scope)}
               </div>
             </div>
           )}
@@ -621,8 +659,6 @@ export default function App() {
       <div style={{ breakBefore: "page" }}>
         <PrintPageHeader title="Support & Onboarding" sub="Customer Success Programme" clientLogo={clientLogo} companyName={companyName} />
         <div style={{ padding: "24px 56px" }}>
-
-          {/* CSM Programme header */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
             <div style={{ width: 4, height: 24, background: T.pGreen, borderRadius: 2, flexShrink: 0 }} />
             <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 17, fontWeight: 700, color: "#0b5235", letterSpacing: 0.2 }}>Customer Success Manager (CSM) Programme</div>
@@ -660,7 +696,6 @@ export default function App() {
             <strong style={{ color: "#92400e" }}>Please Note: </strong>Your CSM will guide you through creating your first WhatsApp message template and share best practices to ensure campaign compliance and successful message delivery.
           </div>
 
-          {/* Self-Service Resources */}
           <div style={{ breakInside: "avoid" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
               <div style={{ width: 4, height: 24, background: T.pGreen, borderRadius: 2, flexShrink: 0 }} />
@@ -679,7 +714,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* ── Page 4: Terms & Conditions ── */}
+      {/* ── Page 5: Terms & Conditions ── */}
       <div style={{ breakBefore: "page" }}>
         <PrintPageHeader title="Terms & Conditions" sub="Commercial Agreement" clientLogo={clientLogo} companyName={companyName} />
         <div style={{ padding: "24px 56px" }}>
@@ -735,7 +770,6 @@ export default function App() {
             <div style={{ marginTop: 10, fontSize: 11.5, color: "#6b7280" }}>For rates outside India: <span style={{ color: T.pAccent }}>https://doubletick.io/conversation-cost</span></div>
           </PrintSection>
 
-          {/* Signature — tight to table, no extra margin */}
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
             <img src={SHIVAM_SIG} alt="Authorised Signatory" style={{ width: 240, objectFit: "contain", display: "block" }} />
           </div>
@@ -899,7 +933,6 @@ export default function App() {
                                   <div style={{ fontWeight: 700, fontSize: 15, color: isSelected ? T.greenLt : T.text }}>{p.name}</div>
                                   <div style={{ fontSize: 12, color: T.textMuted, marginTop: 3 }}>{p.subtitle}</div>
                                 </div>
-                                {/* Enterprise → always custom input */}
                                 {isEnt && isEntCustom ? (
                                   <div style={{ marginLeft: 16, flexShrink: 0, textAlign: "right" }}>
                                     <div style={{ fontSize: 11, color: T.textMuted, marginBottom: 5 }}>Custom {billing} price</div>
@@ -971,13 +1004,11 @@ export default function App() {
                       <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 2 }}>Maximum 30% — applies to plan price only</div>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-                      {/* Quick preset buttons */}
                       {[0, 5, 10, 15, 20, 25, 30].map(v => (
                         <button key={v} onClick={() => setDiscount(v)} style={{ padding: "5px 11px", borderRadius: 6, border: `1.5px solid ${discount === v ? T.green : T.border}`, background: discount === v ? "rgba(23,160,102,0.15)" : "transparent", color: discount === v ? T.greenLt : T.textSub, cursor: "pointer", fontSize: 12, fontWeight: 600, transition: "all 0.12s" }}>
                           {v === 0 ? "None" : `${v}%`}
                         </button>
                       ))}
-                      {/* Custom % input */}
                       <div style={{ display: "flex", alignItems: "center", gap: 4, border: `1.5px solid ${![0,5,10,15,20,25,30].includes(discount) && discount > 0 ? T.green : T.border}`, borderRadius: 6, padding: "4px 8px", background: ![0,5,10,15,20,25,30].includes(discount) && discount > 0 ? "rgba(23,160,102,0.15)" : "transparent" }}>
                         <input
                           type="number" min={0} max={30} step={0.1}
@@ -1055,7 +1086,6 @@ export default function App() {
                               </div>
                               <div style={{ fontSize: 12, color: T.greenLt, fontWeight: 600, whiteSpace: "nowrap", textAlign: "right", flexShrink: 0 }}>{dispPrice}</div>
                             </div>
-                            {/* iframe dropdown — only shown when addon is selected and has iframe option */}
                             {on && hasIframe && (
                               <div onClick={e => e.stopPropagation()} style={{ borderTop: `1px solid ${T.border}`, padding: "8px 14px 10px 40px", display: "flex", alignItems: "center", gap: 10, background: "rgba(23,160,102,0.03)" }}>
                                 <span style={{ fontSize: 11.5, color: T.textSub }}>Integration type:</span>
@@ -1165,7 +1195,10 @@ export default function App() {
               <StepHead title="Review & Generate" sub="Optionally add a scope note, verify the summary, then generate your quotation." />
               <PanelCard>
                 <FField label="Scope of Work (optional)">
-                  <textarea value={scope} onChange={e => setScope(e.target.value)} placeholder="Describe specific deliverables, implementation requirements, or custom use-cases for this client..." rows={5} style={{ ...baseInput, resize: "vertical", lineHeight: 1.65 }} />
+                  <textarea value={scope} onChange={e => setScope(e.target.value)} placeholder={`Describe deliverables per section. Use a header followed by colon for sections, e.g.:\n\nFor Sales:\nMulti-number team inbox\nNative WhatsApp-like app\n\nFor Marketing:\nCTWA Integration\nBulk broadcasts`} rows={8} style={{ ...baseInput, resize: "vertical", lineHeight: 1.65 }} />
+                  <div style={{ marginTop: 6, fontSize: 11, color: T.textMuted }}>
+                    💡 Lines ending with <code style={{ background: "#0d1520", padding: "1px 5px", borderRadius: 3, color: T.greenLt }}>:</code> become section headers. All other lines become bullet points automatically in the PDF.
+                  </div>
                 </FField>
                 <div style={{ marginTop: 24, background: T.surfaceHigh, borderRadius: 11, border: `1px solid ${T.border}`, overflow: "hidden" }}>
                   <div style={{ padding: "13px 20px", borderBottom: `1px solid ${T.border}` }}>
@@ -1195,7 +1228,6 @@ export default function App() {
           )}
         </div>
       ) : (
-        /* Preview wrapper */
         <div style={{ background: "#dde3e8", padding: "36px 20px 72px" }}>
           <PrintDoc />
         </div>
