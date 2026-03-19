@@ -194,7 +194,14 @@ export default function App() {
     if (f) { const r = new FileReader(); r.onload = ev => setClientLogo(ev.target.result); r.readAsDataURL(f); }
   };
 
+  // ── FIX: convert relative /public paths to absolute URLs so they resolve
+  //    correctly in the new blank tab opened by window.open(blob, "_blank")
   const download = () => {
+    const origin = window.location.origin;
+    const fixedHtml = docRef.current.outerHTML
+      .replace(/src="\/dt logo\.jpg"/g, `src="${origin}/dt logo.jpg"`)
+      .replace(/src="\/Shivam Sign\.jpg"/g, `src="${origin}/Shivam Sign.jpg"`);
+
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>DoubleTick Quotation — ${companyName}</title>
       <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
       <style>
@@ -203,7 +210,8 @@ export default function App() {
         @page { margin: 0; size: A4; }
         @media print { body { width: 210mm; } tr { break-inside: avoid !important; } thead { display: table-header-group; } }
       </style>
-    </head><body>${docRef.current.outerHTML}<script>window.onload=()=>{setTimeout(()=>{window.print();},800);}<\/script></body></html>`;
+    </head><body>${fixedHtml}<script>window.onload=()=>{setTimeout(()=>{window.print();},800);}<\/script></body></html>`;
+
     const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const w = window.open(url, "_blank");
@@ -495,7 +503,7 @@ export default function App() {
             <div style={{ marginTop: 10, fontSize: 11.5, color: "#6b7280" }}>For rates outside India: <span style={{ color: T.pAccent }}>https://doubletick.io/conversation-cost</span></div>
           </PrintSection>
 
-          {/* ── SIGNATURE BLOCK — single, correct instance ── */}
+          {/* SIGNATURE BLOCK */}
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 28 }}>
             <div style={{ textAlign: "center", minWidth: 260 }}>
               <img
@@ -503,6 +511,11 @@ export default function App() {
                 alt="Authorised Signatory"
                 style={{ width: 220, objectFit: "contain", display: "block", margin: "0 auto" }}
               />
+              <div style={{ borderTop: "1.5px solid #374151", marginTop: 4, paddingTop: 10 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#0b5235" }}>Shivam Mittal</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#111827", marginTop: 3 }}>Co-Founder — Head of Business</div>
+                <div style={{ fontSize: 11.5, color: "#4b5563", marginTop: 2 }}>Apport Software Solutions Private Limited</div>
+              </div>
             </div>
           </div>
 
