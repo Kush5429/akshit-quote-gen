@@ -510,9 +510,7 @@ export default function App() {
                 src={SHIVAM_SIG}
                 alt="Authorised Signatory"
                 style={{ width: 220, objectFit: "contain", display: "block", margin: "0 auto" }}
-              />
-              <div style={{ borderTop: "1.5px solid #374151", marginTop: 4, paddingTop: 10 }}>
-             
+              />             
             </div>
           </div>
 
