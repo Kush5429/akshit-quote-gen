@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 
 const DOUBLETICK_LOGO = "/dt logo.jpg";
 const SHIVAM_SIG = "/Shivam Sign.jpg";
@@ -175,6 +175,143 @@ const baseInput = {
 // ─── GROQ AI SCOPE GENERATOR ──────────────────────────────────────────────────
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
 
+// ─── QUOTATION REFERENCE ID ────────────────────────────────────────────────────
+function generateQID() {
+  const year = new Date().getFullYear();
+  const num = String(Math.floor(Math.random() * 9000) + 1000);
+  return `DT-${year}-${num}`;
+}
+
+// ─── NAVY PDF THEME ────────────────────────────────────────────────────────────
+const THEMES = {
+  green: {
+    headerBg: "linear-gradient(135deg, #0b5235 0%, #0e7048 100%)",
+    headerSolid: "#0b5235",
+    headerMid: "#0e7048",
+    accent: "#1aad74",
+    accentLight: "#d1fae5",
+    subHeaderBg: "#edfbf3",
+    subHeaderBorder: "#a7f0c8",
+    subHeaderText: "#5aac88",
+    footerBg: "#f4f7f5",
+    footerBorder: "#1aad74",
+    rowEven: "#f9fefe",
+    tableDivider: "#e8f8f0",
+    tableHeaderBg: "linear-gradient(135deg, #0b5235, #1aad74)",
+    catBorder: "#d1fae5",
+    sectionBorder: "#a7f0c8",
+    sectionTitle: "#0b5235",
+    checkColor: "#1aad74",
+  },
+  navy: {
+    headerBg: "linear-gradient(135deg, #0f1f3d 0%, #1a3360 100%)",
+    headerSolid: "#0f1f3d",
+    headerMid: "#1a3360",
+    accent: "#3b82f6",
+    accentLight: "#dbeafe",
+    subHeaderBg: "#eff6ff",
+    subHeaderBorder: "#bfdbfe",
+    subHeaderText: "#3b6dbd",
+    footerBg: "#f0f4ff",
+    footerBorder: "#3b82f6",
+    rowEven: "#f8faff",
+    tableDivider: "#e8eeff",
+    tableHeaderBg: "linear-gradient(135deg, #0f1f3d, #3b82f6)",
+    catBorder: "#bfdbfe",
+    sectionBorder: "#bfdbfe",
+    sectionTitle: "#0f1f3d",
+    checkColor: "#3b82f6",
+  },
+};
+
+// ─── TEMPLATE STORAGE ──────────────────────────────────────────────────────────
+const TEMPLATE_STORAGE_KEY = "dt_quotation_templates";
+function loadTemplates() {
+  try { return JSON.parse(localStorage.getItem(TEMPLATE_STORAGE_KEY) || "[]"); } catch { return []; }
+}
+function saveTemplates(templates) {
+  try { localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(templates)); } catch {}
+}
+
+// ─── ROI CALCULATOR ────────────────────────────────────────────────────────────
+async function generateROIWithGroq({ clientName, companyName, planName, billing, scope, totalGST }) {
+  const prompt = `You are a B2B SaaS ROI analyst for DoubleTick, a WhatsApp Business API CRM.
+
+Generate a concise ROI summary for a sales quotation.
+
+Client: ${clientName} at ${companyName}
+Plan: DoubleTick ${planName} (${billing} billing)
+Investment: ₹${totalGST.toLocaleString("en-IN")} (incl. GST)
+Scope notes: ${scope || "General WhatsApp CRM deployment"}
+
+Generate EXACTLY this structure — no deviations:
+
+ROI Estimates:
+[3-4 bullet lines with specific numbers, e.g. "Reduce support response time by 60–70% with automated chatbots"]
+
+Cost Savings:
+[3 bullet lines with INR estimates, e.g. "Save ₹15,000–20,000/month in manual follow-up agent costs"]
+
+Expected Outcomes:
+[3 bullet lines of business outcomes, e.g. "25–35% increase in qualified lead conversion via CTWA"]
+
+RULES: No emoji. No markdown. No preamble. No closing line. Section headers end with colon. Plain text bullets only. Be specific with % and ₹ ranges.`;
+
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${GROQ_API_KEY}` },
+    body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{ role: "user", content: prompt }], temperature: 0.5, max_tokens: 600 }),
+  });
+  if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err?.error?.message || `Groq error: ${res.status}`); }
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content?.trim() ?? "";
+}
+
+// ─── EMAIL DRAFT GENERATOR ─────────────────────────────────────────────────────
+async function generateEmailWithGroq({ clientName, companyName, planName, billing, totalGST, expiryDate, qid }) {
+  const prompt = `You are a senior B2B sales executive at DoubleTick (a WhatsApp Business CRM company).
+
+Write a professional follow-up email after sending a quotation.
+
+Details:
+- Client name: ${clientName}
+- Company: ${companyName}
+- Plan proposed: DoubleTick ${planName} (${billing} billing)
+- Total investment: ₹${totalGST.toLocaleString("en-IN")} incl. GST
+- Quotation ID: ${qid}
+${expiryDate ? `- Valid until: ${expiryDate}` : ""}
+
+Output EXACTLY this format:
+SUBJECT: [subject line here]
+---
+[email body here]
+
+RULES:
+- Subject line: concise, specific, professional
+- Body: 3–4 short paragraphs, warm but professional tone
+- Mention the QID and plan name
+- End with a clear call to action (schedule a call / reply to confirm)
+- No placeholders like [Your Name] — sign off as "DoubleTick Sales Team"
+- No markdown, no bullet points in the email body
+- No emoji`;
+
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${GROQ_API_KEY}` },
+    body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{ role: "user", content: prompt }], temperature: 0.6, max_tokens: 700 }),
+  });
+  if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err?.error?.message || `Groq error: ${res.status}`); }
+  const data = await res.json();
+  const raw = data.choices?.[0]?.message?.content?.trim() ?? "";
+  const subjectMatch = raw.match(/^SUBJECT:[ \t]*(.+)/m);
+  const sepIdx = raw.indexOf("---");
+  const bodyMatch = sepIdx >= 0 ? [null, raw.slice(sepIdx + 3).trim()] : null;
+  return {
+    subject: subjectMatch?.[1]?.trim() ?? `DoubleTick ${planName} Quotation — ${companyName}`,
+    body: bodyMatch?.[1]?.trim() ?? raw,
+  };
+}
+
 async function generateScopeWithGroq({ notes, websiteOrBrochure, clientName, companyName, planName, billing }) {
   const contextBlock = websiteOrBrochure
     ? `Client business context (website/brochure): ${websiteOrBrochure}\nUse this to understand their industry, use cases, and business model.`
@@ -278,13 +415,13 @@ function renderScopeLines(scopeText) {
 
   return (
     <div style={{ border: "1px solid #c6f0da", borderRadius: 10, overflow: "hidden" }}>
-      <div style={{ background: "linear-gradient(135deg, #0b5235, #1aad74)", padding: "9px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ background: theme.tableHeaderBg, padding: "9px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.7)", letterSpacing: 1, textTransform: "uppercase" }}>Category</span>
         <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.7)", letterSpacing: 1, textTransform: "uppercase" }}>Deliverables</span>
       </div>
       {sections.map((section, si) => (
         <div key={si} style={{ display: "flex", borderBottom: si < sections.length - 1 ? "1px solid #e8f8f0" : "none", background: si % 2 === 0 ? "#f9fefe" : "#fff", breakInside: "avoid" }}>
-          <div style={{ width: 130, flexShrink: 0, padding: "11px 16px", borderRight: "2px solid #d1fae5", display: "flex", alignItems: "flex-start" }}>
+          <div style={{ width: 130, flexShrink: 0, padding: "11px 16px", borderRight: `2px solid ${theme.catBorder}`, display: "flex", alignItems: "flex-start" }}>
             <span style={{ fontSize: 10.5, fontWeight: 700, color: "#0b5235", textTransform: "uppercase", letterSpacing: 0.7, lineHeight: 1.4 }}>
               {section.header || "—"}
             </span>
@@ -292,7 +429,7 @@ function renderScopeLines(scopeText) {
           <div style={{ flex: 1, padding: "10px 16px", display: "grid", gap: 5 }}>
             {section.bullets.map((bullet, bi) => (
               <div key={bi} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-                <span style={{ color: "#1aad74", fontSize: 10, fontWeight: 700, flexShrink: 0, marginTop: 3 }}>✓</span>
+                <span style={{ color: theme.checkColor, fontSize: 10, fontWeight: 700, flexShrink: 0, marginTop: 3 }}>✓</span>
                 <span style={{ fontSize: 12.5, color: "#374151", lineHeight: 1.5 }}>{bullet}</span>
               </div>
             ))}
@@ -485,8 +622,23 @@ export default function App() {
   const [scope, setScope] = useState("");
   const [discount, setDiscount] = useState(0);
   const [preview, setPreview] = useState(false);
-  const [customFeatures, setCustomFeatures] = useState(null); // null = auto, array = manual override
+  const [customFeatures, setCustomFeatures] = useState(null);
   const [newFeatureText, setNewFeatureText] = useState("");
+  // New features
+  const [pdfTheme, setPdfTheme] = useState("green");
+  const [qid] = useState(generateQID);
+  const [expiryDate, setExpiryDate] = useState("");
+  const [includeROI, setIncludeROI] = useState(false);
+  const [roiText, setRoiText] = useState("");
+  const [roiLoading, setRoiLoading] = useState(false);
+  const [roiError, setRoiError] = useState("");
+  const [emailDraft, setEmailDraft] = useState(null);
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [showEmailDraft, setShowEmailDraft] = useState(false);
+  const [templates, setTemplates] = useState(loadTemplates);
+  const [templateName, setTemplateName] = useState("");
+  const [showTemplates, setShowTemplates] = useState(false);
   const logoRef = useRef();
   const docRef = useRef();
 
@@ -503,8 +655,66 @@ export default function App() {
   // Active features = manual override if set, else auto
   const enterpriseFeatures = customFeatures ?? autoFeatures;
 
-  // Reset manual override when plan/price/billing changes significantly
   const resetCustomFeatures = () => setCustomFeatures(null);
+
+  // Current theme object
+  const theme = THEMES[pdfTheme] || THEMES.green;
+
+  // Template save/load
+  const saveTemplate = () => {
+    if (!templateName.trim()) return;
+    const t = {
+      id: Date.now(),
+      name: templateName.trim(),
+      plan, billing, addons, iframeSelections, discount,
+      enterpriseCustomPrice, enterpriseAIBots,
+      customAddonsList, customFeatures,
+      createdAt: new Date().toLocaleDateString("en-IN"),
+    };
+    const updated = [t, ...templates].slice(0, 20);
+    setTemplates(updated);
+    saveTemplates(updated);
+    setTemplateName("");
+  };
+
+  const loadTemplate = (t) => {
+    setPlan(t.plan);
+    setBilling(t.billing);
+    setAddons(t.addons || []);
+    setIframeSelections(t.iframeSelections || {});
+    setDiscount(t.discount || 0);
+    setEnterpriseCustomPrice(t.enterpriseCustomPrice || "");
+    setEnterpriseAIBots(t.enterpriseAIBots || false);
+    setCustomAddonsList(t.customAddonsList || []);
+    setCustomFeatures(t.customFeatures || null);
+    setShowTemplates(false);
+  };
+
+  const deleteTemplate = (id) => {
+    const updated = templates.filter(t => t.id !== id);
+    setTemplates(updated);
+    saveTemplates(updated);
+  };
+
+  // ROI generation
+  const handleGenerateROI = async () => {
+    setRoiLoading(true); setRoiError("");
+    try {
+      const text = await generateROIWithGroq({ clientName, companyName, planName: planData.name, billing: effectiveBillingLabel, scope, totalGST });
+      setRoiText(text);
+    } catch(e) { setRoiError(e.message); }
+    finally { setRoiLoading(false); }
+  };
+
+  // Email generation
+  const handleGenerateEmail = async () => {
+    setEmailLoading(true); setEmailError(""); setShowEmailDraft(true);
+    try {
+      const draft = await generateEmailWithGroq({ clientName, companyName, planName: planData.name, billing: effectiveBillingLabel, totalGST, expiryDate, qid });
+      setEmailDraft(draft);
+    } catch(e) { setEmailError(e.message); }
+    finally { setEmailLoading(false); }
+  };
 
   const basePlanPrice = isEnterpriseCustom
     ? (parseInt(enterpriseCustomPrice.replace(/[^0-9]/g, ""), 10) || 0)
@@ -592,7 +802,7 @@ export default function App() {
 
       {/* PAGE 1 */}
       <div style={{ breakAfter: "page" }}>
-        <div style={{ background: "linear-gradient(135deg, #0b5235 0%, #0e7048 100%)", padding: "38px 56px 30px" }}>
+        <div style={{ background: theme.headerBg, padding: "38px 56px 30px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
               <div style={{ fontSize: 9.5, letterSpacing: 3.5, color: "rgba(255,255,255,0.45)", textTransform: "uppercase", marginBottom: 14, fontWeight: 500 }}>APPORT SOFTWARE SOLUTIONS PVT LTD</div>
@@ -618,24 +828,26 @@ export default function App() {
             </div>
           </div>
         </div>
-        <div style={{ background: "#edfbf3", borderBottom: "2px solid #a7f0c8", padding: "18px 56px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ background: theme.subHeaderBg, borderBottom: `2px solid ${theme.subHeaderBorder}`, padding: "18px 56px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ fontSize: 9.5, letterSpacing: 2.5, color: "#5aac88", textTransform: "uppercase", marginBottom: 5, fontWeight: 600 }}>Prepared For</div>
-            <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 24, fontWeight: 600, color: "#0b5235", lineHeight: 1.2 }}>{clientName}</div>
+            <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 24, fontWeight: 600, color: theme.headerSolid, lineHeight: 1.2 }}>{clientName}</div>
             <div style={{ fontSize: 14, color: "#2d4a3a", fontWeight: 600, marginTop: 3 }}>{companyName}</div>
             {email && <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{email}</div>}
           </div>
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 9.5, letterSpacing: 2.5, color: "#5aac88", textTransform: "uppercase", marginBottom: 5, fontWeight: 600 }}>Date</div>
+            <div style={{ fontSize: 9.5, letterSpacing: 2.5, color: theme.subHeaderText, textTransform: "uppercase", marginBottom: 5, fontWeight: 600 }}>Date</div>
             <div style={{ fontSize: 14, fontWeight: 600, color: "#1f2937" }}>{new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}</div>
-            <div style={{ marginTop: 8, display: "inline-block", background: "#0b5235", color: "#fff", fontSize: 10.5, fontWeight: 600, borderRadius: 30, padding: "4px 14px", letterSpacing: 0.5 }}>{planData.name} Plan &nbsp;·&nbsp; {effectiveBillingLabel} Billing</div>
+            <div style={{ marginTop: 6, display: "inline-block", background: theme.headerSolid, color: "#fff", fontSize: 10.5, fontWeight: 600, borderRadius: 30, padding: "4px 14px", letterSpacing: 0.5 }}>{planData.name} Plan &nbsp;·&nbsp; {effectiveBillingLabel} Billing</div>
+            <div style={{ marginTop: 5, fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Ref: {qid}</div>
+            {expiryDate && <div style={{ marginTop: 4, fontSize: 11, color: "#dc2626", fontWeight: 600 }}>Valid until {new Date(expiryDate).toLocaleDateString("en-IN", {day:"numeric",month:"long",year:"numeric"})}</div>}
           </div>
         </div>
         <div style={{ padding: "38px 56px" }}>
-          <PrintSection title="Company Overview">
+          <PrintSection title="Company Overview" theme={theme}>
             <p style={{ color: "#374151", lineHeight: 1.9, margin: 0, fontSize: 13 }}>QuickSell is a conversational commerce company empowering global brands with scalable personal commerce and relationship-led sales on WhatsApp. Started in 2017 with a vision of enabling global brands to win more customers using simple yet robust technology on mobile, today we have over 7,000+ customers across 100+ countries using our technology to grow digitally.</p>
           </PrintSection>
-          <PrintSection title="About DoubleTick">
+          <PrintSection title="About DoubleTick" theme={theme}>
             <p style={{ color: "#374151", lineHeight: 1.9, marginBottom: 12, fontSize: 13 }}>DoubleTick is a mobile-first conversational CRM built on top of WhatsApp Business API to unlock marketing and sales capabilities of WhatsApp with top-notch features such as a cloud-based team inbox, unlimited broadcast and bulk messaging, real-time broadcast analytics, dynamic cataloging, chatbot, commerce BOT and many more.</p>
             <p style={{ color: "#374151", lineHeight: 1.9, marginBottom: 12, fontSize: 13 }}>Some of the brands powered by DoubleTick include GRT Jewellers, Raheja Developers, Sabyasachi, Tarun Tahiliani, ICRA, BVC Logistics, Tupperware, Birla Brainiacs KGK Group, Walking Tree, CKC Group, Malabar Diamonds and Gold, Emerald India, Prima Art, Siroya, SabyaSachi, etc. Backed by investors from Silicon Valley, Info Edge Ventures and BeeNext Asia, we are headquartered in Mumbai, India.</p>
             <p style={{ color: "#374151", lineHeight: 1.9, marginBottom: 16, fontSize: 13 }}>DoubleTick.io is EU GDPR compliant, ISO 27001 certified, and a Meta Business Partner, powered by the Official WhatsApp Business API. Recognized as Meta Emerging Technology Partner of the Year 2025 and trusted by businesses globally.</p>
@@ -654,12 +866,12 @@ export default function App() {
 
       {/* PAGE 2 */}
       <div style={{ breakBefore: "page" }}>
-        <PrintPageHeader title="Commercial Proposal" sub={`${companyName}  ·  ${effectiveBillingLabel} Billing`} clientLogo={clientLogo} companyName={companyName} />
+        <PrintPageHeader title="Commercial Proposal" sub={`${companyName}  ·  ${effectiveBillingLabel} Billing`} clientLogo={clientLogo} companyName={companyName} theme={theme} />
         <div style={{ padding: "24px 56px" }}>
-          <PrintSection title={`${effectiveBillingLabel} Pricing Summary`}>
+          <PrintSection title={`${effectiveBillingLabel} Pricing Summary`} theme={theme}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
-                <tr style={{ background: "#0b5235", color: "#fff" }}>
+                <tr style={{ background: theme.headerSolid, color: "#fff" }}>
                   <th style={{ padding: "11px 14px", textAlign: "center", width: 44, fontWeight: 600, fontSize: 12 }}>#</th>
                   <th style={{ padding: "11px 16px", textAlign: "left", fontWeight: 600, fontSize: 12 }}>Particulars</th>
                   <th style={{ padding: "11px 16px", textAlign: "right", fontWeight: 600, fontSize: 12 }}>Amount (excl. GST)</th>
@@ -716,7 +928,7 @@ export default function App() {
           </PrintSection>
 
           {/* Features — dynamic for enterprise */}
-          <PrintSection title={`DoubleTick ${planData.name} Plan — Included Features`}>
+          <PrintSection title={`DoubleTick ${planData.name} Plan — Included Features`} theme={theme}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 30px" }}>
               {enterpriseFeatures.map((f, i) => (
                 <div key={i} style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 12.5, color: "#374151", lineHeight: 1.65 }}>
@@ -747,7 +959,7 @@ export default function App() {
 
       {/* PAGE 3 — SCOPE OF WORK */}
       <div style={{ breakBefore: "page" }}>
-        <PrintPageHeader title="Support & Onboarding" sub="Scope of Work" clientLogo={clientLogo} companyName={companyName} />
+        <PrintPageHeader title="Support & Onboarding" sub="Scope of Work" clientLogo={clientLogo} companyName={companyName} theme={theme} />
         <div style={{ padding: "24px 56px" }}>
           {scope && (
             <div style={{ marginBottom: 22 }}>
@@ -760,9 +972,26 @@ export default function App() {
         </div>
       </div>
 
+      {/* PAGE ROI — optional */}
+      {includeROI && roiText && (
+        <div style={{ breakBefore: "page" }}>
+          <PrintPageHeader title="Return on Investment" sub="Business Impact Analysis" clientLogo={clientLogo} companyName={companyName} theme={theme} />
+          <div style={{ padding: "28px 56px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+              <div style={{ width: 4, height: 24, background: theme.headerSolid, borderRadius: 2, flexShrink: 0 }} />
+              <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 17, fontWeight: 700, color: theme.sectionTitle, letterSpacing: 0.2 }}>Projected ROI for {companyName}</div>
+            </div>
+            <div style={{ padding: "6px 16px 14px", background: theme.subHeaderBg, borderRadius: 9, border: `1px solid ${theme.subHeaderBorder}`, marginBottom: 16, fontSize: 12.5, color: "#374151", lineHeight: 1.4 }}>
+              Based on DoubleTick {planData.name} plan ({effectiveBillingLabel} billing) · Investment: ₹{fmtINR(totalGST)}/- incl. GST
+            </div>
+            {renderScopeLines(roiText)}
+          </div>
+        </div>
+      )}
+
       {/* PAGE 4 — CSM */}
       <div style={{ breakBefore: "page" }}>
-        <PrintPageHeader title="Support & Onboarding" sub="Customer Success Programme" clientLogo={clientLogo} companyName={companyName} />
+        <PrintPageHeader title="Support & Onboarding" sub="Customer Success Programme" clientLogo={clientLogo} companyName={companyName} theme={theme} />
         <div style={{ padding: "24px 56px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
             <div style={{ width: 4, height: 24, background: "#0b5235", borderRadius: 2, flexShrink: 0 }} />
@@ -817,9 +1046,9 @@ export default function App() {
 
       {/* PAGE 5 — T&C */}
       <div style={{ breakBefore: "page" }}>
-        <PrintPageHeader title="Terms & Conditions" sub="Commercial Agreement" clientLogo={clientLogo} companyName={companyName} />
+        <PrintPageHeader title="Terms & Conditions" sub="Commercial Agreement" clientLogo={clientLogo} companyName={companyName} theme={theme} />
         <div style={{ padding: "24px 56px" }}>
-          <PrintSection title="Payment & Agreement Terms">
+          <PrintSection title="Payment & Agreement Terms" theme={theme}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <tbody>
                 {[
@@ -837,11 +1066,11 @@ export default function App() {
               </tbody>
             </table>
           </PrintSection>
-          <PrintSection title="WhatsApp API Message Costs">
+          <PrintSection title="WhatsApp API Message Costs" theme={theme}>
             <p style={{ color: "#374151", lineHeight: 1.9, marginBottom: 14, fontSize: 13 }}>WhatsApp message costs are charged separately by Meta and are effective as of <strong>January 1, 2026</strong>. These are prepaid — the client must recharge the DoubleTick Wallet directly. Rates are subject to change per Meta's pricing policy. No setup fees are applicable.</p>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ background: "#0b5235", color: "#fff" }}>
+                <tr style={{ background: theme.headerSolid, color: "#fff" }}>
                   <th style={{ padding: "10px 16px", textAlign: "left", fontWeight: 600, fontSize: 12 }}>Message Type</th>
                   <th style={{ padding: "10px 16px", textAlign: "right", fontWeight: 600, fontSize: 12 }}>Rate (per delivered message)</th>
                 </tr>
@@ -892,20 +1121,29 @@ export default function App() {
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
-      <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 36px", position: "sticky", top: 0, zIndex: 100 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+      <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", position: "sticky", top: 0, zIndex: 100 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{ background: "#fff", borderRadius: 7, padding: "5px 13px", display: "inline-flex", alignItems: "center" }}>
             <img src={DOUBLETICK_LOGO} alt="DoubleTick" style={{ height: 24, objectFit: "contain", display: "block" }} />
           </div>
           <div style={{ height: 20, width: 1, background: T.border }} />
           <span style={{ fontSize: 11.5, color: T.textMuted, letterSpacing: 1.8, textTransform: "uppercase", fontWeight: 500 }}>Quotation Builder</span>
+          <div style={{ padding: "3px 10px", background: T.surfaceHigh, borderRadius: 20, border: `1px solid ${T.border}`, fontSize: 11, color: T.textSub, fontWeight: 600, letterSpacing: 0.5 }}>{qid}</div>
         </div>
-        {preview && (
-          <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={() => setPreview(false)} style={{ padding: "8px 18px", background: "transparent", border: `1px solid ${T.borderMed}`, borderRadius: 7, color: T.textSub, cursor: "pointer", fontSize: 13, fontWeight: 500 }}>← Edit</button>
-            <button onClick={download} style={{ padding: "8px 22px", background: `linear-gradient(135deg, ${T.green}, ${T.greenDk})`, border: "none", borderRadius: 7, color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>↓ &nbsp;Download PDF</button>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {/* PDF Theme Toggle */}
+          <div style={{ display: "flex", background: T.surfaceHigh, borderRadius: 8, border: `1px solid ${T.border}`, overflow: "hidden" }}>
+            {[["green","Green"],["navy","Navy"]].map(([t, label]) => (
+              <button key={t} onClick={() => setPdfTheme(t)} style={{ padding: "6px 12px", background: pdfTheme === t ? T.green : "transparent", border: "none", color: pdfTheme === t ? "#fff" : T.textMuted, cursor: "pointer", fontSize: 11.5, fontWeight: 600 }}>{label}</button>
+            ))}
           </div>
-        )}
+          {preview ? (
+            <>
+              <button onClick={() => setPreview(false)} style={{ padding: "8px 16px", background: "transparent", border: `1px solid ${T.borderMed}`, borderRadius: 7, color: T.textSub, cursor: "pointer", fontSize: 13, fontWeight: 500 }}>← Edit</button>
+              <button onClick={download} style={{ padding: "8px 20px", background: `linear-gradient(135deg, ${T.green}, ${T.greenDk})`, border: "none", borderRadius: 7, color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>↓ Download PDF</button>
+            </>
+          ) : null}
+        </div>
       </div>
 
       {!preview ? (
@@ -929,6 +1167,37 @@ export default function App() {
           {step === 1 && (
             <>
               <StepHead title="Client Information" sub="Enter the recipient's details for this quotation." />
+
+              {/* Templates panel */}
+              <div style={{ marginBottom: 18 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showTemplates ? 12 : 0 }}>
+                  <button onClick={() => setShowTemplates(p => !p)} style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 14px", background: "rgba(23,160,102,0.06)", border: `1.5px solid ${showTemplates ? T.green : T.borderMed}`, borderRadius: 8, color: T.greenLt, cursor: "pointer", fontSize: 12.5, fontWeight: 600 }}>
+                    📋 Saved Templates {templates.length > 0 && <span style={{ background: T.green, color: "#fff", borderRadius: 10, fontSize: 10, padding: "1px 6px" }}>{templates.length}</span>}
+                    <span style={{ fontSize: 10, color: T.textMuted }}>{showTemplates ? "▲" : "▼"}</span>
+                  </button>
+                </div>
+                {showTemplates && (
+                  <div style={{ background: T.surfaceHigh, borderRadius: 10, border: `1px solid ${T.border}`, overflow: "hidden" }}>
+                    {templates.length === 0 ? (
+                      <div style={{ padding: "20px", textAlign: "center", color: T.textMuted, fontSize: 13 }}>No saved templates yet. Configure a quote and save it below.</div>
+                    ) : (
+                      <div style={{ display: "grid", gap: 0 }}>
+                        {templates.map((t, i) => (
+                          <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 16px", borderBottom: i < templates.length - 1 ? `1px solid ${T.border}` : "none" }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{t.name}</div>
+                              <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>{t.plan} · {t.billing} · {t.createdAt}</div>
+                            </div>
+                            <button onClick={() => loadTemplate(t)} style={{ padding: "5px 14px", background: T.green, border: "none", borderRadius: 6, color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Load</button>
+                            <button onClick={() => deleteTemplate(t.id)} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: 13, padding: "0 2px" }}>✕</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <PanelCard>
                 <div style={{ display: "grid", gap: 20 }}>
                   <FField label="Client's Full Name *"><input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="e.g. Anurag Sharma" style={baseInput} /></FField>
@@ -1259,10 +1528,58 @@ export default function App() {
                   />
                 </FField>
 
-                <div style={{ marginTop: 24, background: T.surfaceHigh, borderRadius: 11, border: `1px solid ${T.border}`, overflow: "hidden" }}>
-                  <div style={{ padding: "13px 20px", borderBottom: `1px solid ${T.border}` }}><span style={{ fontSize: 10.5, color: T.textMuted, textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 600 }}>Quotation Summary</span></div>
+                {/* ── SETTINGS ROW: expiry + ROI toggle + template save ── */}
+                <div style={{ marginTop: 20, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                  <FField label="Quotation Expiry Date (optional)">
+                    <input type="date" value={expiryDate} onChange={e => setExpiryDate(e.target.value)} style={{ ...baseInput, fontSize: 13 }} />
+                  </FField>
+                  <FField label="Save as Template">
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <input value={templateName} onChange={e => setTemplateName(e.target.value)} onKeyDown={e => e.key === "Enter" && saveTemplate()} placeholder='e.g. "Standard Pro Quarterly"' style={{ ...baseInput, fontSize: 13 }} />
+                      <button onClick={saveTemplate} disabled={!templateName.trim()} style={{ flexShrink: 0, padding: "0 16px", background: templateName.trim() ? T.green : "#1c2836", border: "none", borderRadius: 8, color: templateName.trim() ? "#fff" : T.textMuted, fontWeight: 700, fontSize: 13, cursor: templateName.trim() ? "pointer" : "not-allowed" }}>Save</button>
+                    </div>
+                  </FField>
+                </div>
+
+                {/* ── ROI PAGE TOGGLE ── */}
+                <div style={{ marginTop: 14, padding: "14px 16px", background: T.surfaceHigh, borderRadius: 10, border: `1px solid ${includeROI ? T.green : T.border}`, transition: "border-color 0.2s" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <div style={{ fontSize: 13.5, fontWeight: 600, color: T.text }}>Include ROI Calculator Page</div>
+                      <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 2 }}>AI-generated page estimating cost savings, leads captured, and business impact</div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, flexShrink: 0, marginLeft: 16 }}>
+                      <button onClick={() => setIncludeROI(false)} style={{ padding: "6px 14px", borderRadius: 6, border: `1.5px solid ${!includeROI ? T.green : T.border}`, background: !includeROI ? "rgba(23,160,102,0.1)" : "transparent", color: !includeROI ? T.greenLt : T.textSub, cursor: "pointer", fontSize: 12.5, fontWeight: 600 }}>No</button>
+                      <button onClick={() => { setIncludeROI(true); if (!roiText) handleGenerateROI(); }} style={{ padding: "6px 14px", borderRadius: 6, border: `1.5px solid ${includeROI ? T.green : T.border}`, background: includeROI ? "rgba(23,160,102,0.1)" : "transparent", color: includeROI ? T.greenLt : T.textSub, cursor: "pointer", fontSize: 12.5, fontWeight: 600 }}>Yes</button>
+                    </div>
+                  </div>
+                  {includeROI && (
+                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${T.border}` }}>
+                      {roiLoading ? (
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, color: T.textMuted, fontSize: 13 }}>
+                          <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid rgba(255,255,255,0.2)", borderTopColor: T.greenLt, borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+                          Generating ROI analysis…
+                        </div>
+                      ) : roiError ? (
+                        <div style={{ fontSize: 12, color: "#f87171" }}>{roiError}</div>
+                      ) : roiText ? (
+                        <div>
+                          <textarea value={roiText} onChange={e => setRoiText(e.target.value)} rows={6} style={{ ...baseInput, fontSize: 12.5, lineHeight: 1.65, resize: "vertical" }} />
+                          <button onClick={handleGenerateROI} style={{ marginTop: 6, fontSize: 11.5, color: T.greenLt, background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}>↺ Regenerate</button>
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+
+                {/* ── SUMMARY ── */}
+                <div style={{ marginTop: 18, background: T.surfaceHigh, borderRadius: 11, border: `1px solid ${T.border}`, overflow: "hidden" }}>
+                  <div style={{ padding: "13px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 10.5, color: T.textMuted, textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 600 }}>Quotation Summary</span>
+                    <span style={{ fontSize: 11, color: T.textMuted, fontWeight: 600 }}>{qid}</span>
+                  </div>
                   <div style={{ padding: "18px 20px" }}>
-                    {[["Client", clientName], ["Company", companyName], email && ["Email", email], ["Plan", `${planData.name} · ${effectiveBillingLabel}`], ["Plan Price", `₹${fmtINR(planPrice)} + 18% GST`], plan === "enterprise" && ["Enterprise Type", enterpriseAIBots ? "With AI Bots" : "Without AI Bots"], addons.length > 0 && ["Add-ons", `${addons.length} selected`]].filter(Boolean).map(([l, v]) => (
+                    {[["Client", clientName], ["Company", companyName], email && ["Email", email], ["Plan", `${planData.name} · ${effectiveBillingLabel}`], ["Plan Price", `₹${fmtINR(planPrice)} + 18% GST`], plan === "enterprise" && ["Enterprise Type", enterpriseAIBots ? "With AI Bots" : "Without AI Bots"], addons.length > 0 && ["Add-ons", `${addons.length} selected`], expiryDate && ["Valid Until", new Date(expiryDate).toLocaleDateString("en-IN", {day:"numeric",month:"long",year:"numeric"})], includeROI && ["ROI Page", "Included"]].filter(Boolean).map(([l, v]) => (
                       <div key={l} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${T.border}` }}>
                         <span style={{ color: T.textMuted, fontSize: 13 }}>{l}</span>
                         <span style={{ color: T.text, fontSize: 13, fontWeight: 500 }}>{v}</span>
@@ -1274,7 +1591,32 @@ export default function App() {
                     </div>
                   </div>
                 </div>
-                <div style={{ marginTop: 28, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+
+                {/* ── EMAIL DRAFT ── */}
+                <div style={{ marginTop: 14 }}>
+                  <button onClick={handleGenerateEmail} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 16px", background: "rgba(23,160,102,0.06)", border: `1.5px solid ${T.borderMed}`, borderRadius: 8, color: T.greenLt, cursor: "pointer", fontSize: 12.5, fontWeight: 600, width: "100%" }}>
+                    ✉️ Generate Follow-up Email Draft
+                    {emailLoading && <span style={{ display: "inline-block", width: 12, height: 12, border: "2px solid rgba(255,255,255,0.2)", borderTopColor: T.greenLt, borderRadius: "50%", animation: "spin 0.7s linear infinite", marginLeft: 4 }} />}
+                  </button>
+                  {showEmailDraft && (emailLoading ? (
+                    <div style={{ marginTop: 10, padding: "14px 16px", background: T.surfaceHigh, borderRadius: 9, border: `1px solid ${T.border}`, fontSize: 13, color: T.textMuted }}>Generating email draft…</div>
+                  ) : emailError ? (
+                    <div style={{ marginTop: 10, padding: "14px 16px", background: "rgba(239,68,68,0.08)", borderRadius: 9, border: "1px solid rgba(239,68,68,0.25)", fontSize: 12, color: "#f87171" }}>{emailError}</div>
+                  ) : emailDraft ? (
+                    <div style={{ marginTop: 10, background: T.surfaceHigh, borderRadius: 10, border: `1px solid ${T.border}`, overflow: "hidden" }}>
+                      <div style={{ padding: "10px 16px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 10.5, color: T.textMuted, textTransform: "uppercase", letterSpacing: 1, fontWeight: 600 }}>Subject:</span>
+                        <span style={{ fontSize: 13, color: T.text, fontWeight: 500 }}>{emailDraft.subject}</span>
+                        <button onClick={() => navigator.clipboard?.writeText(`Subject: ${emailDraft.subject}
+
+${emailDraft.body}`)} style={{ marginLeft: "auto", fontSize: 11, color: T.greenLt, background: "none", border: `1px solid ${T.borderMed}`, cursor: "pointer", padding: "2px 8px", borderRadius: 5 }}>Copy</button>
+                      </div>
+                      <textarea value={emailDraft.body} onChange={e => setEmailDraft(d => ({...d, body: e.target.value}))} rows={10} style={{ ...baseInput, fontSize: 13, lineHeight: 1.7, borderRadius: 0, border: "none", resize: "vertical", borderTop: `1px solid ${T.border}` }} />
+                    </div>
+                  ) : null)}
+                </div>
+
+                <div style={{ marginTop: 24, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <button onClick={() => setStep(3)} style={{ padding: "10px 20px", background: "transparent", border: `1px solid ${T.borderMed}`, borderRadius: 8, color: T.textSub, cursor: "pointer", fontSize: 13 }}>← Back</button>
                   <button onClick={() => setPreview(true)} style={{ padding: "12px 34px", background: `linear-gradient(135deg, ${T.green}, ${T.greenDk})`, border: "none", borderRadius: 9, color: "#fff", cursor: "pointer", fontSize: 14, fontWeight: 700, letterSpacing: 0.3 }}>Generate Quotation →</button>
                 </div>
@@ -1291,9 +1633,9 @@ export default function App() {
   );
 }
 
-function PrintPageHeader({ title, sub, clientLogo, companyName }) {
+function PrintPageHeader({ title, sub, clientLogo, companyName, theme = THEMES.green }) {
   return (
-    <div style={{ background: "linear-gradient(135deg, #0b5235 0%, #0e7048 100%)", padding: "15px 56px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <div style={{ background: theme.headerBg, padding: "15px 56px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
       <div>
         <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 19, fontWeight: 600, color: "#fff" }}>{title}</div>
         <div style={{ fontSize: 11.5, color: "rgba(255,255,255,0.6)", marginTop: 1 }}>{sub}</div>
@@ -1305,7 +1647,7 @@ function PrintPageHeader({ title, sub, clientLogo, companyName }) {
           </div>
         ) : companyName ? (
           <div style={{ background: "#ffffff", borderRadius: 7, padding: "6px 14px", display: "inline-flex", alignItems: "center", justifyContent: "center", minHeight: 36 }}>
-            <span style={{ fontSize: 10, fontWeight: 700, color: "#0b5235", letterSpacing: 1, textTransform: "uppercase" }}>{companyName}</span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: theme.sectionTitle, letterSpacing: 1, textTransform: "uppercase" }}>{companyName}</span>
           </div>
         ) : null}
         <div style={{ background: "#ffffff", borderRadius: 7, padding: "5px 12px", display: "inline-flex", alignItems: "center", boxShadow: "0 1px 6px rgba(0,0,0,0.15)" }}>
@@ -1316,10 +1658,10 @@ function PrintPageHeader({ title, sub, clientLogo, companyName }) {
   );
 }
 
-function PrintSection({ title, children }) {
+function PrintSection({ title, children, theme = THEMES.green }) {
   return (
     <div style={{ marginBottom: 20, breakInside: "avoid" }}>
-      <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 16.5, fontWeight: 600, color: "#0b5235", paddingBottom: 7, borderBottom: "1.5px solid #a7f0c8", marginBottom: 14 }}>{title}</div>
+      <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 16.5, fontWeight: 600, color: theme.sectionTitle, paddingBottom: 7, borderBottom: `1.5px solid ${theme.sectionBorder}`, marginBottom: 14 }}>{title}</div>
       {children}
     </div>
   );
@@ -1327,7 +1669,7 @@ function PrintSection({ title, children }) {
 
 function PrintFooter() {
   return (
-    <div style={{ background: "#f4f7f5", borderTop: "2px solid #1aad74", padding: "10px 56px", display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
+    <div style={{ background: theme.footerBg, borderTop: `2px solid ${theme.footerBorder}`, padding: "10px 56px", display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
       <img src={DOUBLETICK_LOGO} alt="DoubleTick" style={{ height: 18, objectFit: "contain", display: "block" }} />
       <div style={{ fontSize: 10, color: "#9ca3af", letterSpacing: 0.5 }}>doubletick.io &nbsp;·&nbsp; Meta Business Partner &nbsp;·&nbsp; ISO 27001 Certified &nbsp;·&nbsp; EU GDPR Compliant</div>
     </div>
