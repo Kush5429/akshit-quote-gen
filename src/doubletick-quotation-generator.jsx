@@ -409,7 +409,7 @@ function parseScopeSections(scopeText) {
   return sections;
 }
 
-function renderScopeLines(scopeText) {
+function renderScopeLines(scopeText, theme = THEMES.green) {
   const sections = parseScopeSections(scopeText);
   if (sections.length === 0) return null;
 
@@ -420,9 +420,9 @@ function renderScopeLines(scopeText) {
         <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.7)", letterSpacing: 1, textTransform: "uppercase" }}>Deliverables</span>
       </div>
       {sections.map((section, si) => (
-        <div key={si} style={{ display: "flex", borderBottom: si < sections.length - 1 ? "1px solid #e8f8f0" : "none", background: si % 2 === 0 ? "#f9fefe" : "#fff", breakInside: "avoid" }}>
+        <div key={si} style={{ display: "flex", borderBottom: si < sections.length - 1 ? `1px solid ${theme.tableDivider}` : "none", background: si % 2 === 0 ? theme.rowEven : "#fff", breakInside: "avoid" }}>
           <div style={{ width: 130, flexShrink: 0, padding: "11px 16px", borderRight: `2px solid ${theme.catBorder}`, display: "flex", alignItems: "flex-start" }}>
-            <span style={{ fontSize: 10.5, fontWeight: 700, color: "#0b5235", textTransform: "uppercase", letterSpacing: 0.7, lineHeight: 1.4 }}>
+            <span style={{ fontSize: 10.5, fontWeight: 700, color: theme.sectionTitle, textTransform: "uppercase", letterSpacing: 0.7, lineHeight: 1.4 }}>
               {section.header || "—"}
             </span>
           </div>
@@ -861,7 +861,7 @@ export default function App() {
             </div>
           </PrintSection>
         </div>
-        <PrintFooter />
+        <PrintFooter theme={theme} />
       </div>
 
       {/* PAGE 2 */}
@@ -965,7 +965,7 @@ export default function App() {
             <div style={{ marginBottom: 22 }}>
               <div style={{ marginBottom: 10 }} />
               <div style={{ marginTop: 4 }}>
-                {renderScopeLines(scope)}
+                {renderScopeLines(scope, theme)}
               </div>
             </div>
           )}
@@ -984,7 +984,7 @@ export default function App() {
             <div style={{ padding: "6px 16px 14px", background: theme.subHeaderBg, borderRadius: 9, border: `1px solid ${theme.subHeaderBorder}`, marginBottom: 16, fontSize: 12.5, color: "#374151", lineHeight: 1.4 }}>
               Based on DoubleTick {planData.name} plan ({effectiveBillingLabel} billing) · Investment: ₹{fmtINR(totalGST)}/- incl. GST
             </div>
-            {renderScopeLines(roiText)}
+            {renderScopeLines(roiText, theme)}
           </div>
         </div>
       )}
@@ -1103,7 +1103,7 @@ export default function App() {
             </div>
           </div>
         </div>
-        <PrintFooter />
+        <PrintFooter theme={theme} />
       </div>
     </div>
   );
@@ -1509,7 +1509,7 @@ export default function App() {
                       <div style={{ fontSize: 10.5, color: T.textMuted, fontWeight: 600, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 8 }}>Live Preview</div>
                       {scope.trim() ? (
                         <div style={{ transform: "scale(0.88)", transformOrigin: "top left", width: "114%" }}>
-                          {renderScopeLines(scope)}
+                          {renderScopeLines(scope, THEMES.green)}
                         </div>
                       ) : (
                         <div style={{ border: "1.5px dashed #1c2836", borderRadius: 10, padding: "28px 16px", textAlign: "center", color: T.textMuted, fontSize: 12 }}>
@@ -1667,7 +1667,7 @@ function PrintSection({ title, children, theme = THEMES.green }) {
   );
 }
 
-function PrintFooter() {
+function PrintFooter({ theme = THEMES.green }) {
   return (
     <div style={{ background: theme.footerBg, borderTop: `2px solid ${theme.footerBorder}`, padding: "10px 56px", display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
       <img src={DOUBLETICK_LOGO} alt="DoubleTick" style={{ height: 18, objectFit: "contain", display: "block" }} />
