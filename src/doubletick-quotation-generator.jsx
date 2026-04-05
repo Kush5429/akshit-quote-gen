@@ -639,6 +639,7 @@ export default function App() {
   const [templates, setTemplates] = useState(loadTemplates);
   const [templateName, setTemplateName] = useState("");
   const [showTemplates, setShowTemplates] = useState(false);
+  const [loadedTemplateName, setLoadedTemplateName] = useState(""); // for toast
   const logoRef = useRef();
   const docRef = useRef();
 
@@ -678,16 +679,20 @@ export default function App() {
   };
 
   const loadTemplate = (t) => {
-    setPlan(t.plan);
-    setBilling(t.billing);
-    setAddons(t.addons || []);
-    setIframeSelections(t.iframeSelections || {});
-    setDiscount(t.discount || 0);
-    setEnterpriseCustomPrice(t.enterpriseCustomPrice || "");
-    setEnterpriseAIBots(t.enterpriseAIBots || false);
-    setCustomAddonsList(t.customAddonsList || []);
-    setCustomFeatures(t.customFeatures || null);
+    // Explicit checks to handle null/false/0/[] correctly
+    setPlan(t.plan ?? "pro");
+    setBilling(t.billing ?? "quarterly");
+    setAddons(Array.isArray(t.addons) ? t.addons : []);
+    setIframeSelections(t.iframeSelections && typeof t.iframeSelections === "object" ? t.iframeSelections : {});
+    setDiscount(typeof t.discount === "number" ? t.discount : 0);
+    setEnterpriseCustomPrice(t.enterpriseCustomPrice ?? "");
+    setEnterpriseAIBots(t.enterpriseAIBots === true);
+    setCustomAddonsList(Array.isArray(t.customAddonsList) ? t.customAddonsList : []);
+    setCustomFeatures(Array.isArray(t.customFeatures) ? t.customFeatures : null);
     setShowTemplates(false);
+    setLoadedTemplateName(t.name);
+    // Clear toast after 3 seconds
+    setTimeout(() => setLoadedTemplateName(""), 3000);
   };
 
   const deleteTemplate = (id) => {
@@ -1119,6 +1124,7 @@ export default function App() {
         ::-webkit-scrollbar-track { background: #0d1520; }
         ::-webkit-scrollbar-thumb { background: #1c2836; border-radius: 3px; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
       `}</style>
 
       <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", position: "sticky", top: 0, zIndex: 100 }}>
@@ -1170,28 +1176,63 @@ export default function App() {
 
               {/* Templates panel */}
               <div style={{ marginBottom: 18 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showTemplates ? 12 : 0 }}>
-                  <button onClick={() => setShowTemplates(p => !p)} style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 14px", background: "rgba(23,160,102,0.06)", border: `1.5px solid ${showTemplates ? T.green : T.borderMed}`, borderRadius: 8, color: T.greenLt, cursor: "pointer", fontSize: 12.5, fontWeight: 600 }}>
-                    📋 Saved Templates {templates.length > 0 && <span style={{ background: T.green, color: "#fff", borderRadius: 10, fontSize: 10, padding: "1px 6px" }}>{templates.length}</span>}
-                    <span style={{ fontSize: 10, color: T.textMuted }}>{showTemplates ? "▲" : "▼"}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: showTemplates ? 12 : 0 }}>
+                  <button onClick={() => setShowTemplates(p => !p)} style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 14px", background: showTemplates ? "rgba(23,160,102,0.1)" : "rgba(23,160,102,0.06)", border: `1.5px solid ${showTemplates ? T.green : T.borderMed}`, borderRadius: 8, color: T.greenLt, cursor: "pointer", fontSize: 12.5, fontWeight: 600 }}>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}><rect x="1" y="1" width="12" height="12" rx="2" stroke="#21c47a" strokeWidth="1.3"/><path d="M4 5h6M4 7.5h6M4 10h4" stroke="#21c47a" strokeWidth="1.3" strokeLinecap="round"/></svg>
+                    Saved Templates
+                    {templates.length > 0 && <span style={{ background: T.green, color: "#fff", borderRadius: 10, fontSize: 10, padding: "1px 6px", fontWeight: 700 }}>{templates.length}</span>}
+                    <span style={{ fontSize: 10, color: T.textMuted, marginLeft: 2 }}>{showTemplates ? "▲" : "▼"}</span>
                   </button>
+                  {/* Toast — shown after loading */}
+                  {loadedTemplateName && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", background: "rgba(23,160,102,0.12)", border: `1px solid ${T.green}`, borderRadius: 20, fontSize: 12, color: T.greenLt, fontWeight: 600, animation: "fadeIn 0.2s ease" }}>
+                      <span style={{ fontSize: 11 }}>✓</span> "{loadedTemplateName}" loaded — continue to Step 2 to confirm
+                    </div>
+                  )}
                 </div>
+
                 {showTemplates && (
                   <div style={{ background: T.surfaceHigh, borderRadius: 10, border: `1px solid ${T.border}`, overflow: "hidden" }}>
                     {templates.length === 0 ? (
-                      <div style={{ padding: "20px", textAlign: "center", color: T.textMuted, fontSize: 13 }}>No saved templates yet. Configure a quote and save it below.</div>
+                      <div style={{ padding: "24px", textAlign: "center" }}>
+                        <div style={{ fontSize: 13, color: T.textMuted, marginBottom: 4 }}>No saved templates yet</div>
+                        <div style={{ fontSize: 11.5, color: T.textMuted }}>Configure a quote in Steps 2–3, then save it from Step 4</div>
+                      </div>
                     ) : (
-                      <div style={{ display: "grid", gap: 0 }}>
-                        {templates.map((t, i) => (
-                          <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 16px", borderBottom: i < templates.length - 1 ? `1px solid ${T.border}` : "none" }}>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{t.name}</div>
-                              <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>{t.plan} · {t.billing} · {t.createdAt}</div>
+                      <div>
+                        {templates.map((t, i) => {
+                          const PLANS_MAP = { starter: "Starter", pro: "Pro", enterprise: "Enterprise" };
+                          const addonCount = (t.addons || []).length + (t.customAddonsList || []).length;
+                          return (
+                            <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 16px", borderBottom: i < templates.length - 1 ? `1px solid ${T.border}` : "none", transition: "background 0.1s" }}
+                              onMouseEnter={e => e.currentTarget.style.background = "rgba(23,160,102,0.03)"}
+                              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                            >
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 13.5, fontWeight: 600, color: T.text, marginBottom: 4 }}>{t.name}</div>
+                                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                                  {[
+                                    PLANS_MAP[t.plan] || t.plan,
+                                    t.billing?.charAt(0).toUpperCase() + t.billing?.slice(1),
+                                    t.discount > 0 && `${t.discount}% off`,
+                                    addonCount > 0 && `${addonCount} add-on${addonCount > 1 ? "s" : ""}`,
+                                    t.enterpriseCustomPrice && `₹${Number(t.enterpriseCustomPrice).toLocaleString("en-IN")}`,
+                                  ].filter(Boolean).map(badge => (
+                                    <span key={badge} style={{ fontSize: 10.5, color: T.textSub, background: "#0d1520", border: `1px solid ${T.border}`, borderRadius: 12, padding: "2px 8px" }}>{badge}</span>
+                                  ))}
+                                  <span style={{ fontSize: 10.5, color: T.textMuted }}>{t.createdAt}</span>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => loadTemplate(t)}
+                                style={{ flexShrink: 0, padding: "6px 18px", background: T.green, border: "none", borderRadius: 7, color: "#fff", fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}
+                              >
+                                Load
+                              </button>
+                              <button onClick={() => deleteTemplate(t.id)} style={{ flexShrink: 0, background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: 14, padding: "0 2px", lineHeight: 1 }}>✕</button>
                             </div>
-                            <button onClick={() => loadTemplate(t)} style={{ padding: "5px 14px", background: T.green, border: "none", borderRadius: 6, color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Load</button>
-                            <button onClick={() => deleteTemplate(t.id)} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: 13, padding: "0 2px" }}>✕</button>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
