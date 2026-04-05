@@ -865,9 +865,9 @@ export default function App() {
                 <img src={DOUBLETICK_LOGO} alt="DoubleTick" style={{ height: 28, display: "block", objectFit: "contain" }} />
               </div>
               <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 1.85, marginTop: 2 }}>
-                8th Floor, 8-B, Sagar Sangeet, Colaba, Mumbai — 400005<br />
-                deepak@quicksell.co &nbsp;&nbsp;|&nbsp;&nbsp; +91 81040 64645<br />
-                CIN: U72900MH2021PTC354389
+                Office No. 3, 4th Floor, Second Avenue, Connekt Coworks,<br />
+                Subhash Nagar, Andheri East, Mumbai, Maharashtra — 400093<br />
+                kush.ambekar@quicksell.co &nbsp;&nbsp;|&nbsp;&nbsp; +91 79778 14709
               </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "center" }}>
