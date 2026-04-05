@@ -3,6 +3,58 @@ import { useState, useRef } from "react";
 const DOUBLETICK_LOGO = "/dt logo.jpg";
 const SHIVAM_SIG = "/Shivam Sign.jpg";
 
+// ─── ENTERPRISE FEATURE GATING ────────────────────────────────────────────────
+const ENTERPRISE_TIERS = {
+  base: 10000,     // ≥ ₹10k/mo → Frictionless, SLA Breached alerts, CAPI Support
+  premium: 15000,  // ≥ ₹15k/mo → Enterprise Analytics
+};
+
+const ENTERPRISE_BASE_FEATURES = [
+  "Team inbox (scalable agents)",
+  "Roles & permissions",
+  "Number masking",
+  "Automated ordering bot",
+  "3rd party integrations",
+  "Developer API",
+  "Agent & Organization Analytics",
+  "Reports",
+  "Send bulk broadcasts",
+  "Bulk import",
+  "CTWA Integration",
+  "Define customer segments",
+  "Share products and catalogs",
+  "Detailed broadcast analytics",
+  "Excel export and import",
+  "Google Sheets integration",
+  "50 custom attributes",
+  "Unlimited tags",
+  "5 WhatsApp Groups included",
+  "WhatsApp group with key company persons",
+  "Complex journeys",
+];
+
+const ENTERPRISE_TIER_FEATURES = {
+  base: ["Frictionless messaging", "SLA Breached alerts", "CAPI Support"],
+  premium: ["Enterprise Analytics"],
+};
+
+function getEnterpriseMonthlyEquivalent(customPrice, billing) {
+  const raw = parseInt(String(customPrice).replace(/[^0-9]/g, ""), 10) || 0;
+  if (billing === "monthly") return raw;
+  if (billing === "quarterly") return Math.round(raw / 3);
+  if (billing === "yearly") return Math.round(raw / 12);
+  return raw;
+}
+
+function getEnterpriseFeatures(customPrice, billing) {
+  const monthly = getEnterpriseMonthlyEquivalent(customPrice, billing);
+  const features = [...ENTERPRISE_BASE_FEATURES];
+  if (monthly >= ENTERPRISE_TIERS.base) features.push(...ENTERPRISE_TIER_FEATURES.base);
+  if (monthly >= ENTERPRISE_TIERS.premium) features.push(...ENTERPRISE_TIER_FEATURES.premium);
+  return features;
+}
+
+// ─── PLANS ────────────────────────────────────────────────────────────────────
 const PLANS = {
   starter: {
     name: "Starter",
@@ -22,7 +74,7 @@ const PLANS = {
     name: "Enterprise",
     subtitle: "Full Suite — Quarterly Only",
     monthly: null, quarterly: 30000, yearly: 120000,
-    features: ["Team inbox (scalable agents)", "Frictionless messaging", "SLA Breached alerts", "Roles & permissions", "Number masking", "Automated ordering bot", "3rd party integrations", "Developer API", "Agent & Organization Analytics", "Reports", "Send bulk broadcasts", "Bulk import", "CTWA Integration", "Define customer segments", "Share products and catalogs", "Detailed broadcast analytics", "Excel export and import", "Google Sheets integration", "Unlimited tags & custom attributes", "5 WhatsApp Groups included", "WhatsApp group with key company persons", "Complex journeys", "Enterprise Analytics", "CAPI Support"],
+    features: [],
   },
 };
 
@@ -86,11 +138,72 @@ const T = {
 
 const baseInput = {
   width: "100%", padding: "11px 15px", background: "#0d1520",
-  border: `1.5px solid ${T.border}`, borderRadius: 8, color: T.text,
+  border: `1.5px solid #1c2836`, borderRadius: 8, color: "#e4eaf0",
   fontSize: 14, outline: "none", fontFamily: "inherit",
   boxSizing: "border-box", lineHeight: 1.5,
 };
 
+// ─── GROQ AI SCOPE GENERATOR ──────────────────────────────────────────────────
+const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
+
+async function generateScopeWithGroq({ notes, websiteOrBrochure, clientName, companyName, planName, billing }) {
+  const contextBlock = websiteOrBrochure
+    ? `Client business context (website/brochure): ${websiteOrBrochure}\nUse this to understand their industry, use cases, and business model.`
+    : "";
+
+  const prompt = `You are a B2B SaaS sales expert at DoubleTick, a WhatsApp Business API CRM platform.
+
+Generate a professional Scope of Work for a quotation for:
+- Client: ${clientName} at ${companyName}
+- Plan: DoubleTick ${planName} (${billing} billing)
+${contextBlock}
+
+Sales rep discussion notes:
+${notes}
+
+FORMAT RULES (strictly follow):
+- Section headers must end with a colon (:) — e.g. "For Sales:" or "Integration Requirements:"
+- Under each header, write bullet points as plain text (one per line, no dashes or symbols)
+- Leave a blank line between sections
+- 3-5 sections, 3-5 bullets each
+- Keep it professional, specific to their use case
+- Output ONLY the formatted scope text — no preamble or explanation
+
+Example:
+For Sales:
+Multi-number team inbox for field agents
+Real-time agent performance analytics
+WhatsApp-based order confirmation flows
+
+For Marketing:
+Bulk broadcast campaigns to segmented lists
+CTWA ad integration for lead capture
+Automated follow-up sequences`;
+
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${GROQ_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: "llama-3.3-70b-versatile",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.6,
+      max_tokens: 800,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `Groq API error: ${res.status}`);
+  }
+
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content?.trim() ?? "";
+}
+
+// ─── SCOPE RENDERER (PDF) ─────────────────────────────────────────────────────
 function renderScopeLines(scopeText) {
   return scopeText.split("\n").map((line, i) => {
     const trimmed = line.trim();
@@ -113,6 +226,137 @@ function renderScopeLines(scopeText) {
   });
 }
 
+// ─── AI SCOPE GENERATOR UI ────────────────────────────────────────────────────
+function AIScopeGenerator({ onGenerated, planName, billing, clientName, companyName }) {
+  const [notes, setNotes] = useState("");
+  const [websiteOrBrochure, setWebsiteOrBrochure] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [expanded, setExpanded] = useState(false);
+
+  const hasKey = !!GROQ_API_KEY;
+
+  const handleGenerate = async () => {
+    if (!notes.trim()) { setError("Add some discussion notes first."); return; }
+    setError("");
+    setLoading(true);
+    try {
+      const result = await generateScopeWithGroq({ notes, websiteOrBrochure, clientName, companyName, planName, billing });
+      onGenerated(result);
+      setExpanded(false);
+    } catch (e) {
+      setError(e.message || "Something went wrong. Check your Groq API key.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!hasKey) {
+    return (
+      <div style={{ marginTop: 8, padding: "10px 14px", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 8, fontSize: 12, color: "#f59e0b" }}>
+        Add <code style={{ background: "#0d1520", padding: "1px 5px", borderRadius: 3 }}>VITE_GROQ_API_KEY</code> to your <code style={{ background: "#0d1520", padding: "1px 5px", borderRadius: 3 }}>.env</code> to enable AI Scope generation.
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ marginTop: 10 }}>
+      <button
+        onClick={() => setExpanded(p => !p)}
+        style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", background: expanded ? "rgba(23,160,102,0.12)" : "rgba(23,160,102,0.06)", border: `1.5px solid ${expanded ? "#17a066" : "#243242"}`, borderRadius: 8, color: "#21c47a", cursor: "pointer", fontSize: 12.5, fontWeight: 600, width: "100%", transition: "all 0.15s" }}
+      >
+        <span style={{ fontSize: 15 }}>✨</span>
+        Generate with AI
+        <span style={{ fontSize: 10, color: "#3d5264", fontWeight: 400, marginLeft: 2 }}>Powered by Groq · Llama 3.3 70B</span>
+        <span style={{ marginLeft: "auto", fontSize: 10, color: "#3d5264" }}>{expanded ? "▲" : "▼"}</span>
+      </button>
+
+      {expanded && (
+        <div style={{ marginTop: 10, padding: "18px 18px", background: "#16202b", borderRadius: 10, border: "1px solid #1c2836", display: "grid", gap: 14 }}>
+          <div>
+            <label style={{ display: "block", fontSize: 11, color: "#3d5264", fontWeight: 600, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 6 }}>
+              What did you discuss with the client? *
+            </label>
+            <textarea
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="e.g. cx wants broadcasting + chatbots + minimal automations. They run a D2C brand and want to reduce WhatsApp support load. Also interested in Zoho CRM integration."
+              rows={4}
+              style={{ ...baseInput, resize: "vertical", lineHeight: 1.65, fontSize: 13 }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: "block", fontSize: 11, color: "#3d5264", fontWeight: 600, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 6 }}>
+              Client website or brochure URL
+              <span style={{ color: "#3d5264", textTransform: "none", fontWeight: 400, fontSize: 10, marginLeft: 6 }}>(optional — helps AI tailor the scope to their business)</span>
+            </label>
+            <input
+              value={websiteOrBrochure}
+              onChange={e => setWebsiteOrBrochure(e.target.value)}
+              placeholder="e.g. https://acmecorp.com  or  paste brochure URL"
+              style={{ ...baseInput, fontSize: 13 }}
+            />
+          </div>
+
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {[{ label: "Plan", value: planName }, { label: "Billing", value: billing }, { label: "Client", value: clientName || "—" }].map(({ label, value }) => (
+              <div key={label} style={{ padding: "3px 10px", background: "#0d1520", borderRadius: 20, border: "1px solid #1c2836", fontSize: 11.5, color: "#6d8497" }}>
+                <span style={{ color: "#3d5264" }}>{label}: </span>
+                <span style={{ color: "#21c47a", fontWeight: 600 }}>{value}</span>
+              </div>
+            ))}
+          </div>
+
+          {error && (
+            <div style={{ padding: "9px 13px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 8, fontSize: 12, color: "#f87171" }}>
+              {error}
+            </div>
+          )}
+
+          <button
+            onClick={handleGenerate}
+            disabled={loading || !notes.trim()}
+            style={{ padding: "10px 22px", background: loading || !notes.trim() ? "#1c2836" : "linear-gradient(135deg, #17a066, #0d7a4e)", border: "none", borderRadius: 8, color: loading || !notes.trim() ? "#3d5264" : "#fff", cursor: loading || !notes.trim() ? "not-allowed" : "pointer", fontSize: 13.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 10, alignSelf: "flex-start", transition: "all 0.15s" }}
+          >
+            {loading
+              ? <><span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid rgba(255,255,255,0.2)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />Generating…</>
+              : "✨ Generate Scope of Work"
+            }
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── ENTERPRISE TIER BADGE (Step 2 plan card) ─────────────────────────────────
+function EnterpriseTierBadge({ customPrice, billing }) {
+  const monthly = getEnterpriseMonthlyEquivalent(customPrice, billing);
+  if (!customPrice || !monthly) return null;
+  const hasBase = monthly >= ENTERPRISE_TIERS.base;
+  const hasPremium = monthly >= ENTERPRISE_TIERS.premium;
+
+  return (
+    <div style={{ marginTop: 12, display: "grid", gap: 6 }}>
+      <div style={{ fontSize: 10.5, color: "#3d5264", fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 2 }}>
+        Feature eligibility · ₹{fmtINR(monthly)}/mo equivalent
+      </div>
+      {[
+        { label: "Frictionless messaging, SLA Breached alerts, CAPI Support", unlocked: hasBase, threshold: "₹10k/mo" },
+        { label: "Enterprise Analytics", unlocked: hasPremium, threshold: "₹15k/mo" },
+      ].map(({ label, unlocked, threshold }) => (
+        <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", borderRadius: 7, background: unlocked ? "rgba(23,160,102,0.08)" : "rgba(255,255,255,0.02)", border: `1px solid ${unlocked ? "#17a066" : "#1c2836"}` }}>
+          <span style={{ fontSize: 11, flexShrink: 0 }}>{unlocked ? "✅" : "🔒"}</span>
+          <span style={{ fontSize: 11.5, color: unlocked ? "#21c47a" : "#3d5264", flex: 1 }}>{label}</span>
+          {!unlocked && <span style={{ fontSize: 10, color: "#3d5264", flexShrink: 0, whiteSpace: "nowrap" }}>requires {threshold}</span>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function App() {
   const [step, setStep] = useState(1);
   const [clientName, setClientName] = useState("");
@@ -137,6 +381,10 @@ export default function App() {
   const isEnterpriseCustom = plan === "enterprise";
   const effectiveBilling = billing;
   const effectiveBillingLabel = { monthly: "Monthly", quarterly: "Quarterly", yearly: "Yearly" }[billing];
+
+  const enterpriseFeatures = isEnterpriseCustom
+    ? getEnterpriseFeatures(enterpriseCustomPrice, billing)
+    : planData.features;
 
   const basePlanPrice = isEnterpriseCustom
     ? (parseInt(enterpriseCustomPrice.replace(/[^0-9]/g, ""), 10) || 0)
@@ -194,8 +442,6 @@ export default function App() {
     if (f) { const r = new FileReader(); r.onload = ev => setClientLogo(ev.target.result); r.readAsDataURL(f); }
   };
 
-  // ── FIX: convert relative /public paths to absolute URLs so they resolve
-  //    correctly in the new blank tab opened by window.open(blob, "_blank")
   const download = () => {
     const origin = window.location.origin;
     const fixedHtml = docRef.current.outerHTML
@@ -226,7 +472,7 @@ export default function App() {
 
       {/* PAGE 1 */}
       <div style={{ breakAfter: "page" }}>
-        <div style={{ background: `linear-gradient(135deg, ${T.pGreen} 0%, ${T.pGreenMid} 100%)`, padding: "38px 56px 30px" }}>
+        <div style={{ background: "linear-gradient(135deg, #0b5235 0%, #0e7048 100%)", padding: "38px 56px 30px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
               <div style={{ fontSize: 9.5, letterSpacing: 3.5, color: "rgba(255,255,255,0.45)", textTransform: "uppercase", marginBottom: 14, fontWeight: 500 }}>APPORT SOFTWARE SOLUTIONS PVT LTD</div>
@@ -255,14 +501,14 @@ export default function App() {
         <div style={{ background: "#edfbf3", borderBottom: "2px solid #a7f0c8", padding: "18px 56px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ fontSize: 9.5, letterSpacing: 2.5, color: "#5aac88", textTransform: "uppercase", marginBottom: 5, fontWeight: 600 }}>Prepared For</div>
-            <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 24, fontWeight: 600, color: T.pGreen, lineHeight: 1.2 }}>{clientName}</div>
+            <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 24, fontWeight: 600, color: "#0b5235", lineHeight: 1.2 }}>{clientName}</div>
             <div style={{ fontSize: 14, color: "#2d4a3a", fontWeight: 600, marginTop: 3 }}>{companyName}</div>
             {email && <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{email}</div>}
           </div>
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: 9.5, letterSpacing: 2.5, color: "#5aac88", textTransform: "uppercase", marginBottom: 5, fontWeight: 600 }}>Date</div>
             <div style={{ fontSize: 14, fontWeight: 600, color: "#1f2937" }}>{new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}</div>
-            <div style={{ marginTop: 8, display: "inline-block", background: T.pGreen, color: "#fff", fontSize: 10.5, fontWeight: 600, borderRadius: 30, padding: "4px 14px", letterSpacing: 0.5 }}>{planData.name} Plan &nbsp;·&nbsp; {effectiveBillingLabel} Billing</div>
+            <div style={{ marginTop: 8, display: "inline-block", background: "#0b5235", color: "#fff", fontSize: 10.5, fontWeight: 600, borderRadius: 30, padding: "4px 14px", letterSpacing: 0.5 }}>{planData.name} Plan &nbsp;·&nbsp; {effectiveBillingLabel} Billing</div>
           </div>
         </div>
         <div style={{ padding: "38px 56px" }}>
@@ -274,7 +520,7 @@ export default function App() {
             <p style={{ color: "#374151", lineHeight: 1.9, marginBottom: 12, fontSize: 13 }}>Some of the brands powered by DoubleTick include GRT Jewellers, Raheja Developers, Sabyasachi, Tarun Tahiliani, ICRA, BVC Logistics, Tupperware, Birla Brainiacs KGK Group, Walking Tree, CKC Group, Malabar Diamonds and Gold, Emerald India, Prima Art, Siroya, SabyaSachi, etc. Backed by investors from Silicon Valley, Info Edge Ventures and BeeNext Asia, we are headquartered in Mumbai, India.</p>
             <p style={{ color: "#374151", lineHeight: 1.9, marginBottom: 16, fontSize: 13 }}>DoubleTick.io is EU GDPR compliant, ISO 27001 certified, and a Meta Business Partner, powered by the Official WhatsApp Business API. Recognized as Meta Emerging Technology Partner of the Year 2025 and trusted by businesses globally.</p>
             <div style={{ padding: "14px 18px", background: "#f0fdf8", borderRadius: 9, border: "1px solid #a7f0c8", fontSize: 12 }}>
-              <div style={{ fontWeight: 600, color: T.pGreen, marginBottom: 8 }}>Customer Reviews</div>
+              <div style={{ fontWeight: 600, color: "#0b5235", marginBottom: 8 }}>Customer Reviews</div>
               <div style={{ color: "#2d6a4f", lineHeight: 2 }}>
                 G2: https://www.g2.com/products/doubletick-io/reviews<br />
                 App Store: https://apps.apple.com/in/app/doubletick/id1662977073<br />
@@ -293,7 +539,7 @@ export default function App() {
           <PrintSection title={`${effectiveBillingLabel} Pricing Summary`}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
-                <tr style={{ background: T.pGreen, color: "#fff" }}>
+                <tr style={{ background: "#0b5235", color: "#fff" }}>
                   <th style={{ padding: "11px 14px", textAlign: "center", width: 44, fontWeight: 600, fontSize: 12 }}>#</th>
                   <th style={{ padding: "11px 16px", textAlign: "left", fontWeight: 600, fontSize: 12 }}>Particulars</th>
                   <th style={{ padding: "11px 16px", textAlign: "right", fontWeight: 600, fontSize: 12 }}>Amount (excl. GST)</th>
@@ -304,7 +550,7 @@ export default function App() {
                   <td style={pTdc}>1</td>
                   <td style={pTdl}>
                     DoubleTick {planData.name} Plan &mdash; {effectiveBillingLabel}
-                    {discount > 0 && <div style={{ fontSize: 11, color: T.pAccent, marginTop: 2, fontWeight: 600 }}>{discount}% discount applied · Original: ₹{fmtINR(planPriceOriginal)}</div>}
+                    {discount > 0 && <div style={{ fontSize: 11, color: "#1aad74", marginTop: 2, fontWeight: 600 }}>{discount}% discount applied · Original: ₹{fmtINR(planPriceOriginal)}</div>}
                     {plan === "enterprise" && (
                       <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>
                         {(() => {
@@ -330,34 +576,37 @@ export default function App() {
                   <tr key={a.id} style={{ background: (numericAddons.length + i) % 2 === 0 ? "#fff" : "#f7faf9" }}>
                     <td style={pTdc}>{numericAddons.length + i + 2}</td>
                     <td style={pTdl}>{a.label}</td>
-                    <td style={{ ...pTdr, color: T.pAccent, fontStyle: "italic" }}>{getAddonPrintLabel(a)}</td>
+                    <td style={{ ...pTdr, color: "#1aad74", fontStyle: "italic" }}>{getAddonPrintLabel(a)}</td>
                   </tr>
                 ))}
                 {customAddonsList.map((ca, i) => (
                   <tr key={ca.id} style={{ background: (numericAddons.length + customAddons.length + i) % 2 === 0 ? "#fff" : "#f7faf9" }}>
                     <td style={pTdc}>{numericAddons.length + customAddons.length + i + 2}</td>
                     <td style={pTdl}>{ca.label}</td>
-                    <td style={{ ...pTdr, color: T.pAccent, fontStyle: "italic" }}>{ca.price ? `INR ${Number(ca.price).toLocaleString("en-IN")}/-` : "—"} {ca.billing !== "custom" ? `(${ca.billing})` : ""}</td>
+                    <td style={{ ...pTdr, color: "#1aad74", fontStyle: "italic" }}>{ca.price ? `INR ${Number(ca.price).toLocaleString("en-IN")}/-` : "—"} {ca.billing !== "custom" ? `(${ca.billing})` : ""}</td>
                   </tr>
                 ))}
                 <tr>
                   <td colSpan={2} style={{ padding: "12px 16px", textAlign: "right", fontSize: 12.5, color: "#6b7280", borderTop: "1.5px solid #d1fae5" }}>Subtotal + 18% GST</td>
-                  <td style={{ padding: "12px 16px", textAlign: "right", fontSize: 15, fontWeight: 700, color: T.pGreen, borderTop: "1.5px solid #d1fae5" }}>INR {fmtINR(totalGST)}/-</td>
+                  <td style={{ padding: "12px 16px", textAlign: "right", fontSize: 15, fontWeight: 700, color: "#0b5235", borderTop: "1.5px solid #d1fae5" }}>INR {fmtINR(totalGST)}/-</td>
                 </tr>
               </tbody>
             </table>
             <div style={{ marginTop: 8, fontSize: 11, color: "#9ca3af", fontStyle: "italic" }}>* GST at 18% is applicable additionally on all taxable line items.</div>
           </PrintSection>
+
+          {/* Features — dynamic for enterprise */}
           <PrintSection title={`DoubleTick ${planData.name} Plan — Included Features`}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 30px" }}>
-              {planData.features.map((f, i) => (
+              {enterpriseFeatures.map((f, i) => (
                 <div key={i} style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 12.5, color: "#374151", lineHeight: 1.65 }}>
-                  <span style={{ color: T.pAccent, flexShrink: 0, marginTop: 3, fontSize: 10 }}>▶</span>
+                  <span style={{ color: "#1aad74", flexShrink: 0, marginTop: 3, fontSize: 10 }}>▶</span>
                   <span>{f}</span>
                 </div>
               ))}
             </div>
           </PrintSection>
+
           <div style={{ padding: "16px 20px", background: "#fffbeb", borderRadius: 9, border: "1px solid #fcd34d", fontSize: 12.5 }}>
             <div style={{ fontWeight: 700, color: "#78350f", marginBottom: 10, fontSize: 12, letterSpacing: 0.5, textTransform: "uppercase" }}>Important Notes</div>
             <div style={{ display: "grid", gap: 8 }}>
@@ -376,14 +625,14 @@ export default function App() {
         </div>
       </div>
 
-      {/* PAGE 3 */}
+      {/* PAGE 3 — SCOPE OF WORK */}
       <div style={{ breakBefore: "page" }}>
         <PrintPageHeader title="Support & Onboarding" sub="Scope of Work" clientLogo={clientLogo} companyName={companyName} />
         <div style={{ padding: "24px 56px" }}>
           {scope && (
             <div style={{ marginBottom: 22 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                <div style={{ width: 4, height: 24, background: T.pGreen, borderRadius: 2, flexShrink: 0 }} />
+                <div style={{ width: 4, height: 24, background: "#0b5235", borderRadius: 2, flexShrink: 0 }} />
                 <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 17, fontWeight: 700, color: "#0b5235", letterSpacing: 0.2 }}>Scope of Work</div>
               </div>
               <div style={{ padding: "16px 20px", background: "#f8fafc", borderRadius: 9, border: "1px solid #e2e8f0" }}>
@@ -394,16 +643,16 @@ export default function App() {
         </div>
       </div>
 
-      {/* PAGE 4 */}
+      {/* PAGE 4 — CSM */}
       <div style={{ breakBefore: "page" }}>
         <PrintPageHeader title="Support & Onboarding" sub="Customer Success Programme" clientLogo={clientLogo} companyName={companyName} />
         <div style={{ padding: "24px 56px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-            <div style={{ width: 4, height: 24, background: T.pGreen, borderRadius: 2, flexShrink: 0 }} />
+            <div style={{ width: 4, height: 24, background: "#0b5235", borderRadius: 2, flexShrink: 0 }} />
             <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 17, fontWeight: 700, color: "#0b5235", letterSpacing: 0.2 }}>Customer Success Manager (CSM) Programme</div>
           </div>
           <div style={{ padding: "10px 16px", background: "#edfbf3", borderRadius: 8, border: "1px solid #a7f0c8", marginBottom: 12 }}>
-            <div style={{ fontWeight: 600, color: T.pGreen, fontSize: 12.5 }}>60-Day Dedicated CSM Policy &mdash; Effective 3 October 2025</div>
+            <div style={{ fontWeight: 600, color: "#0b5235", fontSize: 12.5 }}>60-Day Dedicated CSM Policy &mdash; Effective 3 October 2025</div>
           </div>
           <p style={{ color: "#374151", lineHeight: 1.8, marginBottom: 7, fontSize: 12.5 }}>Every account will have a dedicated Customer Success Manager assigned for 60 days from the date of activation. The CSM will serve as your primary point of contact, assisting with account setup, onboarding, and ensuring a smooth implementation of the platform.</p>
           <p style={{ color: "#374151", lineHeight: 1.8, marginBottom: 12, fontSize: 12.5 }}>After the 60-day CSM period, you will receive a brief feedback form. You will continue to have full access to the DoubleTick Support Channel for ongoing assistance at any time.</p>
@@ -420,7 +669,7 @@ export default function App() {
                   ["06", "Platform Walkthrough", "A dedicated 15-minute guided walkthrough of the full DoubleTick platform"],
                 ].map(([num, title, desc], i) => (
                   <tr key={num} style={{ background: i % 2 === 0 ? "#fff" : "#f8fafc", borderBottom: "1px solid #e5e7eb", breakInside: "avoid" }}>
-                    <td style={{ padding: "9px 12px", width: 38, fontWeight: 700, color: T.pGreen, fontSize: 14, verticalAlign: "middle", fontFamily: "'EB Garamond', serif", textAlign: "center", borderRight: "1px solid #e5e7eb" }}>{num}</td>
+                    <td style={{ padding: "9px 12px", width: 38, fontWeight: 700, color: "#0b5235", fontSize: 14, verticalAlign: "middle", fontFamily: "'EB Garamond', serif", textAlign: "center", borderRight: "1px solid #e5e7eb" }}>{num}</td>
                     <td style={{ padding: "9px 14px", fontWeight: 600, color: "#111827", width: 180, verticalAlign: "middle", fontSize: 12, borderRight: "1px solid #e5e7eb" }}>{title}</td>
                     <td style={{ padding: "9px 14px", color: "#4b5563", fontSize: 12, lineHeight: 1.6 }}>{desc}</td>
                   </tr>
@@ -433,14 +682,14 @@ export default function App() {
           </div>
           <div style={{ breakInside: "avoid" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-              <div style={{ width: 4, height: 24, background: T.pGreen, borderRadius: 2, flexShrink: 0 }} />
+              <div style={{ width: 4, height: 24, background: "#0b5235", borderRadius: 2, flexShrink: 0 }} />
               <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 17, fontWeight: 700, color: "#0b5235", letterSpacing: 0.2 }}>Self-Service Resources</div>
             </div>
             <p style={{ color: "#374151", lineHeight: 1.8, marginBottom: 10, fontSize: 12.5 }}>To maximise your use of the platform at any time, we encourage you to utilise the following self-service resources:</p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
               {[["Video Courses & Help Center", "Step-by-step tutorials covering all platform features"], ["Live & Recorded Webinars", "Best-practice sessions hosted by the DoubleTick team"], ["Developer Documentation", "Comprehensive API guides for custom integrations"]].map(([t, d]) => (
                 <div key={t} style={{ padding: "11px 13px", background: "#f8fafc", borderRadius: 9, border: "1px solid #e2e8f0" }}>
-                  <div style={{ fontWeight: 600, color: T.pGreen, marginBottom: 4, fontSize: 12 }}>{t}</div>
+                  <div style={{ fontWeight: 600, color: "#0b5235", marginBottom: 4, fontSize: 12 }}>{t}</div>
                   <div style={{ fontSize: 11, color: "#6b7280", lineHeight: 1.6 }}>{d}</div>
                 </div>
               ))}
@@ -449,7 +698,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* PAGE 5 */}
+      {/* PAGE 5 — T&C */}
       <div style={{ breakBefore: "page" }}>
         <PrintPageHeader title="Terms & Conditions" sub="Commercial Agreement" clientLogo={clientLogo} companyName={companyName} />
         <div style={{ padding: "24px 56px" }}>
@@ -475,7 +724,7 @@ export default function App() {
             <p style={{ color: "#374151", lineHeight: 1.9, marginBottom: 14, fontSize: 13 }}>WhatsApp message costs are charged separately by Meta and are effective as of <strong>January 1, 2026</strong>. These are prepaid — the client must recharge the DoubleTick Wallet directly. Rates are subject to change per Meta's pricing policy. No setup fees are applicable.</p>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ background: T.pGreen, color: "#fff" }}>
+                <tr style={{ background: "#0b5235", color: "#fff" }}>
                   <th style={{ padding: "10px 16px", textAlign: "left", fontWeight: 600, fontSize: 12 }}>Message Type</th>
                   <th style={{ padding: "10px 16px", textAlign: "right", fontWeight: 600, fontSize: 12 }}>Rate (per delivered message)</th>
                 </tr>
@@ -495,31 +744,25 @@ export default function App() {
                       {type}
                       {note && <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2, fontStyle: "italic" }}>{note}</div>}
                     </td>
-                    <td style={{ padding: "10px 16px", textAlign: "right", fontWeight: 600, color: free ? T.pGreen : "#111827", fontSize: 12.5 }}>{rate}</td>
+                    <td style={{ padding: "10px 16px", textAlign: "right", fontWeight: 600, color: free ? "#0b5235" : "#111827", fontSize: 12.5 }}>{rate}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <div style={{ marginTop: 10, fontSize: 11.5, color: "#6b7280" }}>For rates outside India: <span style={{ color: T.pAccent }}>https://doubletick.io/conversation-cost</span></div>
+            <div style={{ marginTop: 10, fontSize: 11.5, color: "#6b7280" }}>For rates outside India: <span style={{ color: "#1aad74" }}>https://doubletick.io/conversation-cost</span></div>
           </PrintSection>
-
-          {/* SIGNATURE BLOCK */}
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 28 }}>
             <div style={{ textAlign: "center", minWidth: 260 }}>
-              <img
-                src={SHIVAM_SIG}
-                alt="Authorised Signatory"
-                style={{ width: 220, objectFit: "contain", display: "block", margin: "0 auto" }}
-              />             
+              <img src={SHIVAM_SIG} alt="Authorised Signatory" style={{ width: 220, objectFit: "contain", display: "block", margin: "0 auto" }} />
             </div>
           </div>
-
         </div>
         <PrintFooter />
       </div>
     </div>
   );
 
+  // ─── APP SHELL ──────────────────────────────────────────────────────────────
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", minHeight: "100vh", background: T.bg, color: T.text }}>
       <style>{`
@@ -529,6 +772,7 @@ export default function App() {
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: #0d1520; }
         ::-webkit-scrollbar-thumb { background: #1c2836; border-radius: 3px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
       <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 36px", position: "sticky", top: 0, zIndex: 100 }}>
@@ -564,6 +808,7 @@ export default function App() {
             ))}
           </div>
 
+          {/* STEP 1 */}
           {step === 1 && (
             <>
               <StepHead title="Client Information" sub="Enter the recipient's details for this quotation." />
@@ -598,6 +843,7 @@ export default function App() {
             </>
           )}
 
+          {/* STEP 2 */}
           {step === 2 && (
             <>
               <StepHead title="Plan & Billing" sub="Choose the billing cycle and DoubleTick plan to propose." />
@@ -615,6 +861,7 @@ export default function App() {
                   {billing === "quarterly" && plan === "enterprise" && <div style={{ marginTop: 10, padding: "9px 14px", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 8, fontSize: 12, color: "#f59e0b" }}>Enterprise quarterly pricing is custom — enter the agreed quarterly amount below.</div>}
                   {billing === "yearly" && plan === "enterprise" && <div style={{ marginTop: 10, padding: "9px 14px", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 8, fontSize: 12, color: "#f59e0b" }}>Enterprise yearly pricing is custom — enter the agreed annual amount below.</div>}
                 </FField>
+
                 <div style={{ marginTop: 22 }}>
                   <FField label="Plan">
                     <div style={{ display: "grid", gap: 10, marginTop: 4 }}>
@@ -653,7 +900,13 @@ export default function App() {
                                   </div>
                                 )}
                               </div>
+
+                              {/* Enterprise tier badge — shows feature eligibility live as price is typed */}
+                              {isEnt && isSelected && enterpriseCustomPrice && (
+                                <EnterpriseTierBadge customPrice={enterpriseCustomPrice} billing={billing} />
+                              )}
                             </div>
+
                             {isSelected && isEnt && (
                               <div style={{ marginTop: 8, padding: "12px 16px", background: T.surfaceHigh, borderRadius: 9, border: `1px solid ${T.borderMed}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                 <div>
@@ -672,6 +925,7 @@ export default function App() {
                     </div>
                   </FField>
                 </div>
+
                 <div style={{ marginTop: 18, padding: "16px 18px", background: T.surfaceHigh, borderRadius: 11, border: `1px solid ${discount > 0 ? T.green : T.border}`, transition: "border-color 0.2s" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: discount > 0 ? 14 : 0 }}>
                     <div>
@@ -715,6 +969,7 @@ export default function App() {
             </>
           )}
 
+          {/* STEP 3 */}
           {step === 3 && (
             <>
               <StepHead title="Add-on Features" sub="Select optional add-ons. Prices shown for your selected billing cycle." />
@@ -792,14 +1047,31 @@ export default function App() {
             </>
           )}
 
+          {/* STEP 4 */}
           {step === 4 && (
             <>
               <StepHead title="Review & Generate" sub="Optionally add a scope note, verify the summary, then generate your quotation." />
               <PanelCard>
                 <FField label="Scope of Work (optional)">
-                  <textarea value={scope} onChange={e => setScope(e.target.value)} placeholder={`Lines ending with colon become section headers.\n\nFor Sales:\nMulti-number team inbox\nNative WhatsApp-like app\n\nFor Marketing:\nCTWA Integration\nBulk broadcasts`} rows={8} style={{ ...baseInput, resize: "vertical", lineHeight: 1.65 }} />
-                  <div style={{ marginTop: 6, fontSize: 11, color: T.textMuted }}>💡 Lines ending with <code style={{ background: "#0d1520", padding: "1px 5px", borderRadius: 3, color: T.greenLt }}>:</code> become section headers. All other lines become bullet points in the PDF.</div>
+                  <textarea
+                    value={scope}
+                    onChange={e => setScope(e.target.value)}
+                    placeholder={`Lines ending with colon become section headers.\n\nFor Sales:\nMulti-number team inbox\nNative WhatsApp-like app\n\nFor Marketing:\nCTWA Integration\nBulk broadcasts`}
+                    rows={8}
+                    style={{ ...baseInput, resize: "vertical", lineHeight: 1.65 }}
+                  />
+                  <div style={{ marginTop: 6, fontSize: 11, color: T.textMuted }}>
+                    💡 Lines ending with <code style={{ background: "#0d1520", padding: "1px 5px", borderRadius: 3, color: T.greenLt }}>:</code> become section headers. All other lines become bullet points in the PDF.
+                  </div>
+                  <AIScopeGenerator
+                    onGenerated={(text) => setScope(text)}
+                    planName={planData.name}
+                    billing={effectiveBillingLabel}
+                    clientName={clientName}
+                    companyName={companyName}
+                  />
                 </FField>
+
                 <div style={{ marginTop: 24, background: T.surfaceHigh, borderRadius: 11, border: `1px solid ${T.border}`, overflow: "hidden" }}>
                   <div style={{ padding: "13px 20px", borderBottom: `1px solid ${T.border}` }}><span style={{ fontSize: 10.5, color: T.textMuted, textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 600 }}>Quotation Summary</span></div>
                   <div style={{ padding: "18px 20px" }}>
