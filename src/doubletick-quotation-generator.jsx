@@ -234,33 +234,67 @@ function saveTemplates(templates) {
 }
 
 // ─── ROI CALCULATOR ────────────────────────────────────────────────────────────
-async function generateROIWithGroq({ clientName, companyName, planName, billing, scope, totalGST }) {
-  const prompt = `You are a B2B SaaS ROI analyst for DoubleTick, a WhatsApp Business API CRM.
+async function generateROIWithGroq({ clientName, companyName, planName, billing, scope, totalGST, addonLabels, features, planPrice, discount }) {
+  // Build rich context so Groq can generate client-specific (not generic) ROI
+  const addonContext = addonLabels.length > 0
+    ? `Selected add-ons: ${addonLabels.join(", ")}`
+    : "No additional add-ons";
 
-Generate a concise ROI summary for a sales quotation.
+  const scopeContext = scope?.trim()
+    ? `Scope of work discussed:\n${scope.trim()}`
+    : "No specific scope provided — infer from plan and add-ons";
 
-Client: ${clientName} at ${companyName}
-Plan: DoubleTick ${planName} (${billing} billing)
-Investment: ₹${totalGST.toLocaleString("en-IN")} (incl. GST)
-Scope notes: ${scope || "General WhatsApp CRM deployment"}
+  const discountContext = discount > 0 ? `A ${discount}% discount has been applied (investment-conscious client).` : "";
 
-Generate EXACTLY this structure — no deviations:
+  // Pull out key features that hint at their use case
+  const featureHighlights = features.slice(0, 8).join(", ");
 
-ROI Estimates:
-[3-4 bullet lines with specific numbers, e.g. "Reduce support response time by 60–70% with automated chatbots"]
+  const prompt = `You are a senior B2B ROI analyst writing a personalised Return on Investment page for a sales quotation.
+
+CLIENT CONTEXT:
+- Company: ${companyName} (contact: ${clientName})
+- Plan purchased: DoubleTick ${planName} — ${billing} billing
+- Total investment: ₹${totalGST.toLocaleString("en-IN")} incl. GST (plan: ₹${planPrice.toLocaleString("en-IN")})
+- ${addonContext}
+- Key features included: ${featureHighlights}
+- ${discountContext}
+
+${scopeContext}
+
+TASK:
+Write a highly specific, numbers-driven ROI summary for ${companyName}. Use their actual scope and add-ons to derive realistic estimates. Do NOT write generic WhatsApp CRM benefits — write benefits specific to what ${companyName} is actually getting.
+
+OUTPUT FORMAT (follow exactly):
+For ${companyName}:
+[1 punchy opening line about their specific situation, no bullet point]
+
+Efficiency Gains:
+[3-4 bullets with % improvements specific to their use case and add-ons]
 
 Cost Savings:
-[3 bullet lines with INR estimates, e.g. "Save ₹15,000–20,000/month in manual follow-up agent costs"]
+[3 bullets with ₹ monthly estimates, derived from their investment and team size context]
 
-Expected Outcomes:
-[3 bullet lines of business outcomes, e.g. "25–35% increase in qualified lead conversion via CTWA"]
+Business Impact:
+[3 bullets on revenue/growth outcomes specific to their industry/scope]
 
-RULES: No emoji. No markdown. No preamble. No closing line. Section headers end with colon. Plain text bullets only. Be specific with % and ₹ ranges.`;
+STRICT RULES:
+- No emoji, no markdown, no asterisks
+- Section headers end with colon only
+- Plain text bullets — no dashes, no numbers
+- All numbers must be ranges (e.g. 40-60%, ₹12,000-18,000/month)
+- Reference ${companyName} by name at least twice in the bullets
+- Reference specific features they selected (e.g. CTWA, chatbot, CAPI, SLA) where relevant
+- Start directly with "For ${companyName}:" — no preamble`;
 
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": `Bearer ${GROQ_API_KEY}` },
-    body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{ role: "user", content: prompt }], temperature: 0.5, max_tokens: 600 }),
+    body: JSON.stringify({
+      model: "llama-3.3-70b-versatile",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.75,
+      max_tokens: 700,
+    }),
   });
   if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err?.error?.message || `Groq error: ${res.status}`); }
   const data = await res.json();
@@ -705,7 +739,23 @@ export default function App() {
   const handleGenerateROI = async () => {
     setRoiLoading(true); setRoiError("");
     try {
-      const text = await generateROIWithGroq({ clientName, companyName, planName: planData.name, billing: effectiveBillingLabel, scope, totalGST });
+      // Build addon labels list for context
+      const addonLabels = [
+        ...selAddons.map(a => a.label),
+        ...customAddonsList.map(ca => ca.label),
+      ];
+      const text = await generateROIWithGroq({
+        clientName,
+        companyName,
+        planName: planData.name,
+        billing: effectiveBillingLabel,
+        scope,
+        totalGST,
+        addonLabels,
+        features: enterpriseFeatures,
+        planPrice,
+        discount,
+      });
       setRoiText(text);
     } catch(e) { setRoiError(e.message); }
     finally { setRoiLoading(false); }
