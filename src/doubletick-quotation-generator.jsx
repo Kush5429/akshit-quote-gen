@@ -47,29 +47,28 @@ function getEnterpriseMonthlyEquivalent(customPrice, billing) {
 }
 
 // Returns {capi, frictionless, sla, analytics} — boolean for each feature
+// Logic (no upper bounds — a higher plan always retains lower-tier features):
+//   CAPI Support        → monthly equiv ≥ ₹10k
+//   Frictionless        → monthly equiv ≥ ₹10k  OR  quarterly raw ≥ ₹30k
+//   SLA Breached Alerts → monthly equiv ≥ ₹10k  OR  quarterly raw ≥ ₹20k
+//   Enterprise Analytics→ monthly equiv ≥ ₹15k  OR  yearly raw ≥ ₹5k/mo equiv
 function getEnterpriseEligibility(customPrice, billing) {
   const raw = parseInt(String(customPrice).replace(/[^0-9]/g, ""), 10) || 0;
   const monthly = getEnterpriseMonthlyEquivalent(customPrice, billing);
   const isQuarterly = billing === "quarterly";
   const isYearly = billing === "yearly";
 
-  // CAPI Support: monthly equiv ₹10k–12k
-  const capi = monthly >= 10000 && monthly <= 12000;
+  // CAPI Support: monthly equiv ≥ ₹10k
+  const capi = monthly >= 10000;
 
-  // Frictionless messaging: monthly equiv ₹10k–12k OR quarterly raw ≥ ₹30k
-  const frictionless =
-    (monthly >= 10000 && monthly <= 12000) ||
-    (isQuarterly && raw >= 30000);
+  // Frictionless messaging: monthly equiv ≥ ₹10k  OR  quarterly raw ≥ ₹30k
+  const frictionless = monthly >= 10000 || (isQuarterly && raw >= 30000);
 
-  // SLA Breached alerts: monthly equiv ₹10k–12k OR quarterly raw ₹20k–30k
-  const sla =
-    (monthly >= 10000 && monthly <= 12000) ||
-    (isQuarterly && raw >= 20000 && raw <= 30000);
+  // SLA Breached alerts: monthly equiv ≥ ₹10k  OR  quarterly raw ≥ ₹20k
+  const sla = monthly >= 10000 || (isQuarterly && raw >= 20000);
 
-  // Enterprise Analytics: monthly equiv ₹15k–20k OR yearly with ≥ ₹5k/mo equiv
-  const analytics =
-    (monthly >= 15000 && monthly <= 20000) ||
-    (isYearly && monthly >= 5000);
+  // Enterprise Analytics: monthly equiv ≥ ₹15k  OR  yearly raw ≥ ₹5k/mo equiv
+  const analytics = monthly >= 15000 || (isYearly && monthly >= 5000);
 
   return { capi, frictionless, sla, analytics };
 }
@@ -423,27 +422,27 @@ function EnterpriseTierBadge({ customPrice, billing }) {
   const rows = [
     {
       label: "CAPI Support",
-      sublabel: "Free between ₹10k–12k/mo",
+      sublabel: "Included from ₹10k/mo onwards",
       unlocked: capi,
-      hint: "₹10k–12k/mo",
+      hint: "min ₹10k/mo",
     },
     {
       label: "Frictionless Messaging",
-      sublabel: isQuarterly ? "₹10k–12k/mo equiv  or  ₹30k+ quarterly" : "₹10k–12k/mo equiv",
+      sublabel: isQuarterly ? "≥ ₹10k/mo equiv  or  quarterly ≥ ₹30k" : "≥ ₹10k/mo equiv",
       unlocked: frictionless,
-      hint: isQuarterly ? "₹10k–12k/mo or ₹30k/qtr" : "₹10k–12k/mo",
+      hint: isQuarterly ? "₹10k/mo or ₹30k/qtr" : "min ₹10k/mo",
     },
     {
       label: "SLA Breached Alerts",
-      sublabel: isQuarterly ? "₹10k–12k/mo equiv  or  ₹20k–30k quarterly" : "₹10k–12k/mo equiv",
+      sublabel: isQuarterly ? "≥ ₹10k/mo equiv  or  quarterly ≥ ₹20k" : "≥ ₹10k/mo equiv",
       unlocked: sla,
-      hint: isQuarterly ? "₹10k–12k/mo or ₹20k–30k/qtr" : "₹10k–12k/mo",
+      hint: isQuarterly ? "₹10k/mo or ₹20k/qtr" : "min ₹10k/mo",
     },
     {
       label: "Enterprise Analytics",
-      sublabel: isYearly ? "₹15k–20k/mo equiv  or  yearly ≥ ₹5k/mo" : "₹15k–20k/mo equiv",
+      sublabel: isYearly ? "≥ ₹15k/mo equiv  or  yearly ≥ ₹5k/mo" : "≥ ₹15k/mo equiv",
       unlocked: analytics,
-      hint: isYearly ? "₹15k–20k/mo or yearly ≥₹5k/mo" : "₹15k–20k/mo",
+      hint: isYearly ? "₹15k/mo or yearly ≥₹5k/mo" : "min ₹15k/mo",
     },
   ];
 
@@ -486,6 +485,8 @@ export default function App() {
   const [scope, setScope] = useState("");
   const [discount, setDiscount] = useState(0);
   const [preview, setPreview] = useState(false);
+  const [customFeatures, setCustomFeatures] = useState(null); // null = auto, array = manual override
+  const [newFeatureText, setNewFeatureText] = useState("");
   const logoRef = useRef();
   const docRef = useRef();
 
@@ -494,9 +495,16 @@ export default function App() {
   const effectiveBilling = billing;
   const effectiveBillingLabel = { monthly: "Monthly", quarterly: "Quarterly", yearly: "Yearly" }[billing];
 
-  const enterpriseFeatures = isEnterpriseCustom
+  // Auto-computed features (recalculate when price/billing changes)
+  const autoFeatures = isEnterpriseCustom
     ? getEnterpriseFeatures(enterpriseCustomPrice, billing)
     : planData.features;
+
+  // Active features = manual override if set, else auto
+  const enterpriseFeatures = customFeatures ?? autoFeatures;
+
+  // Reset manual override when plan/price/billing changes significantly
+  const resetCustomFeatures = () => setCustomFeatures(null);
 
   const basePlanPrice = isEnterpriseCustom
     ? (parseInt(enterpriseCustomPrice.replace(/[^0-9]/g, ""), 10) || 0)
@@ -1033,6 +1041,57 @@ export default function App() {
                       })}
                     </div>
                   </FField>
+                </div>
+
+                {/* ── EDITABLE FEATURES PANEL ── */}
+                <div style={{ marginTop: 18, padding: "16px 18px", background: T.surfaceHigh, borderRadius: 11, border: `1px solid ${T.border}` }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                    <div>
+                      <div style={{ fontSize: 13.5, fontWeight: 600, color: T.text }}>Included Features</div>
+                      <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 2 }}>
+                        {customFeatures ? "Manually edited · " : "Auto-computed from price · "}
+                        <span style={{ color: T.greenLt, cursor: "pointer", textDecoration: "underline" }} onClick={() => setCustomFeatures(null)}>Reset to auto</span>
+                      </div>
+                    </div>
+                    {customFeatures && (
+                      <span style={{ fontSize: 10.5, background: "rgba(23,160,102,0.15)", color: T.greenLt, padding: "3px 10px", borderRadius: 20, fontWeight: 600 }}>Edited</span>
+                    )}
+                  </div>
+                  <div style={{ display: "grid", gap: 5, marginBottom: 12 }}>
+                    {enterpriseFeatures.map((f, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", background: "#0d1520", borderRadius: 7, border: `1px solid ${T.border}` }}>
+                        <span style={{ color: T.greenLt, fontSize: 10, flexShrink: 0 }}>▶</span>
+                        <span style={{ fontSize: 12.5, color: T.text, flex: 1 }}>{f}</span>
+                        <button
+                          onClick={() => setCustomFeatures((enterpriseFeatures).filter((_, fi) => fi !== i))}
+                          style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: 13, padding: "0 2px", lineHeight: 1, flexShrink: 0 }}
+                          title="Remove feature"
+                        >✕</button>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <input
+                      value={newFeatureText}
+                      onChange={e => setNewFeatureText(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === "Enter" && newFeatureText.trim()) {
+                          setCustomFeatures([...enterpriseFeatures, newFeatureText.trim()]);
+                          setNewFeatureText("");
+                        }
+                      }}
+                      placeholder="Add a feature (press Enter or click +)"
+                      style={{ ...baseInput, fontSize: 13, padding: "8px 12px" }}
+                    />
+                    <button
+                      onClick={() => {
+                        if (!newFeatureText.trim()) return;
+                        setCustomFeatures([...enterpriseFeatures, newFeatureText.trim()]);
+                        setNewFeatureText("");
+                      }}
+                      style={{ flexShrink: 0, background: T.green, border: "none", borderRadius: 8, color: "#fff", fontWeight: 700, fontSize: 13, padding: "8px 16px", cursor: "pointer" }}
+                    >+</button>
+                  </div>
                 </div>
 
                 <div style={{ marginTop: 18, padding: "16px 18px", background: T.surfaceHigh, borderRadius: 11, border: `1px solid ${discount > 0 ? T.green : T.border}`, transition: "border-color 0.2s" }}>
