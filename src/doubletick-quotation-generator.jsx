@@ -204,35 +204,80 @@ Automated follow-up sequences`;
 }
 
 // ─── SCOPE RENDERER (PDF) ─────────────────────────────────────────────────────
-function renderScopeLines(scopeText) {
-  return scopeText.split("\n").map((line, i) => {
+// Section icons — SVG paths keyed by index (cycles if more than 6 sections)
+const SCOPE_ICONS = [
+  // arrow right
+  <path d="M2 6h8M6 2l4 4-4 4" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>,
+  // chart line
+  <path d="M1 9l3-3 2 2 4-5" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>,
+  // clock
+  <><circle cx="6" cy="6" r="4.5" stroke="#fff" strokeWidth="1.5"/><path d="M6 3.5v2.5l1.5 1.5" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/></>,
+  // star
+  <path d="M6 1l1.5 3h3L8 6l1 3.5L6 8l-3 1.5L4 6 1.5 4h3z" stroke="#fff" strokeWidth="1.2" strokeLinejoin="round"/>,
+  // people
+  <><circle cx="4.5" cy="3.5" r="2" stroke="#fff" strokeWidth="1.3"/><path d="M1 10c0-2 1.5-3.5 3.5-3.5S8 8 8 10" stroke="#fff" strokeWidth="1.3" strokeLinecap="round"/><circle cx="9" cy="4" r="1.5" stroke="#fff" strokeWidth="1.3"/><path d="M9 7.5c1.5 0 2.5 1 2.5 2.5" stroke="#fff" strokeWidth="1.3" strokeLinecap="round"/></>,
+  // lightning
+  <path d="M7 1L3 6.5h4L4 11l6-6H7z" stroke="#fff" strokeWidth="1.2" strokeLinejoin="round"/>,
+];
+
+function parseScopeSections(scopeText) {
+  const sections = [];
+  let current = null;
+  scopeText.split("\n").forEach(line => {
     const trimmed = line.trim();
-    if (!trimmed) return <div key={i} style={{ height: 8 }} />;
-    const isHeader = /^[A-Za-z*\s()&/,+-]+:$/.test(trimmed) || /^\*[^*]+\*$/.test(trimmed);
+    if (!trimmed) return;
+    const isHeader = /^[A-Za-z*\s()&/,+\-]+:$/.test(trimmed) || /^\*[^*]+\*$/.test(trimmed);
     if (isHeader) {
-      return (
-        <div key={i} style={{ fontWeight: 700, color: "#0b5235", fontSize: 13, marginTop: i === 0 ? 0 : 12, marginBottom: 5, fontFamily: "'EB Garamond', serif", letterSpacing: 0.2, borderBottom: "1px solid #d1fae5", paddingBottom: 3 }}>
-          {trimmed.replace(/^\*|\*$/g, "")}
-        </div>
-      );
+      current = { header: trimmed.replace(/^\*|\*$/g, "").replace(/:$/, ""), bullets: [] };
+      sections.push(current);
+    } else {
+      const bullet = trimmed.replace(/^[-•*]\s*/, "").replace(/^\d+\.\s*/, "");
+      if (!current) { current = { header: null, bullets: [] }; sections.push(current); }
+      current.bullets.push(bullet);
     }
-    const bulletStripped = trimmed.replace(/^[-•*]\s*/, "").replace(/^\d+\.\s*/, "");
-    return (
-      <div key={i} style={{ display: "flex", gap: 9, alignItems: "flex-start", marginBottom: 5, paddingLeft: 2 }}>
-        <span style={{ color: "#1aad74", flexShrink: 0, fontSize: 9, marginTop: 5, fontWeight: 700 }}>▶</span>
-        <span style={{ color: "#374151", fontSize: 12.5, lineHeight: 1.8 }}>{bulletStripped}</span>
-      </div>
-    );
   });
+  return sections;
+}
+
+function renderScopeLines(scopeText) {
+  const sections = parseScopeSections(scopeText);
+  if (sections.length === 0) return null;
+
+  return (
+    <div style={{ border: "1px solid #c6f0da", borderRadius: 10, overflow: "hidden" }}>
+      <div style={{ background: "linear-gradient(135deg, #0b5235, #1aad74)", padding: "11px 20px", display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "rgba(255,255,255,0.5)", flexShrink: 0 }} />
+        <span style={{ fontSize: 12, fontWeight: 700, color: "#fff", letterSpacing: 0.4 }}>Scope of Work</span>
+      </div>
+      {sections.map((section, si) => (
+        <div key={si} style={{ display: "flex", borderBottom: si < sections.length - 1 ? "1px solid #e8f8f0" : "none", background: si % 2 === 0 ? "#f9fefe" : "#fff", breakInside: "avoid" }}>
+          <div style={{ width: 130, flexShrink: 0, padding: "11px 16px", borderRight: "2px solid #d1fae5", display: "flex", alignItems: "flex-start" }}>
+            <span style={{ fontSize: 10.5, fontWeight: 700, color: "#0b5235", textTransform: "uppercase", letterSpacing: 0.7, lineHeight: 1.4 }}>
+              {section.header || "—"}
+            </span>
+          </div>
+          <div style={{ flex: 1, padding: "10px 16px", display: "grid", gap: 5 }}>
+            {section.bullets.map((bullet, bi) => (
+              <div key={bi} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                <span style={{ color: "#1aad74", fontSize: 10, fontWeight: 700, flexShrink: 0, marginTop: 3 }}>✓</span>
+                <span style={{ fontSize: 12.5, color: "#374151", lineHeight: 1.5 }}>{bullet}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 // ─── AI SCOPE GENERATOR UI ────────────────────────────────────────────────────
-function AIScopeGenerator({ onGenerated, planName, billing, clientName, companyName }) {
+function AIScopeGenerator({ scope, onGenerated, planName, billing, clientName, companyName }) {
   const [notes, setNotes] = useState("");
   const [websiteOrBrochure, setWebsiteOrBrochure] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [expanded, setExpanded] = useState(false);
+  const [generated, setGenerated] = useState(false); // true after first generation
 
   const hasKey = !!GROQ_API_KEY;
 
@@ -243,7 +288,8 @@ function AIScopeGenerator({ onGenerated, planName, billing, clientName, companyN
     try {
       const result = await generateScopeWithGroq({ notes, websiteOrBrochure, clientName, companyName, planName, billing });
       onGenerated(result);
-      setExpanded(false);
+      setGenerated(true);
+      // keep panel open so user can edit
     } catch (e) {
       setError(e.message || "Something went wrong. Check your Groq API key.");
     } finally {
@@ -266,8 +312,9 @@ function AIScopeGenerator({ onGenerated, planName, billing, clientName, companyN
         style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", background: expanded ? "rgba(23,160,102,0.12)" : "rgba(23,160,102,0.06)", border: `1.5px solid ${expanded ? "#17a066" : "#243242"}`, borderRadius: 8, color: "#21c47a", cursor: "pointer", fontSize: 12.5, fontWeight: 600, width: "100%", transition: "all 0.15s" }}
       >
         <span style={{ fontSize: 15 }}>✨</span>
-        Generate with AI
+        {generated ? "Regenerate with AI" : "Generate with AI"}
         <span style={{ fontSize: 10, color: "#3d5264", fontWeight: 400, marginLeft: 2 }}>Powered by Groq · Llama 3.3 70B</span>
+        {generated && <span style={{ marginLeft: 4, fontSize: 10, background: "rgba(23,160,102,0.2)", color: "#21c47a", padding: "2px 7px", borderRadius: 10, fontWeight: 600 }}>Generated ✓</span>}
         <span style={{ marginLeft: "auto", fontSize: 10, color: "#3d5264" }}>{expanded ? "▲" : "▼"}</span>
       </button>
 
@@ -289,12 +336,12 @@ function AIScopeGenerator({ onGenerated, planName, billing, clientName, companyN
           <div>
             <label style={{ display: "block", fontSize: 11, color: "#3d5264", fontWeight: 600, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 6 }}>
               Client website or brochure URL
-              <span style={{ color: "#3d5264", textTransform: "none", fontWeight: 400, fontSize: 10, marginLeft: 6 }}>(optional — helps AI tailor the scope to their business)</span>
+              <span style={{ color: "#3d5264", textTransform: "none", fontWeight: 400, fontSize: 10, marginLeft: 6 }}>(optional)</span>
             </label>
             <input
               value={websiteOrBrochure}
               onChange={e => setWebsiteOrBrochure(e.target.value)}
-              placeholder="e.g. https://acmecorp.com  or  paste brochure URL"
+              placeholder="e.g. https://acmecorp.com"
               style={{ ...baseInput, fontSize: 13 }}
             />
           </div>
@@ -321,7 +368,7 @@ function AIScopeGenerator({ onGenerated, planName, billing, clientName, companyN
           >
             {loading
               ? <><span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid rgba(255,255,255,0.2)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />Generating…</>
-              : "✨ Generate Scope of Work"
+              : generated ? "✨ Regenerate" : "✨ Generate Scope of Work"
             }
           </button>
         </div>
@@ -635,7 +682,7 @@ export default function App() {
                 <div style={{ width: 4, height: 24, background: "#0b5235", borderRadius: 2, flexShrink: 0 }} />
                 <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 17, fontWeight: 700, color: "#0b5235", letterSpacing: 0.2 }}>Scope of Work</div>
               </div>
-              <div style={{ padding: "16px 20px", background: "#f8fafc", borderRadius: 9, border: "1px solid #e2e8f0" }}>
+              <div style={{ marginTop: 4 }}>
                 {renderScopeLines(scope)}
               </div>
             </div>
@@ -1053,17 +1100,36 @@ export default function App() {
               <StepHead title="Review & Generate" sub="Optionally add a scope note, verify the summary, then generate your quotation." />
               <PanelCard>
                 <FField label="Scope of Work (optional)">
-                  <textarea
-                    value={scope}
-                    onChange={e => setScope(e.target.value)}
-                    placeholder={`Lines ending with colon become section headers.\n\nFor Sales:\nMulti-number team inbox\nNative WhatsApp-like app\n\nFor Marketing:\nCTWA Integration\nBulk broadcasts`}
-                    rows={8}
-                    style={{ ...baseInput, resize: "vertical", lineHeight: 1.65 }}
-                  />
-                  <div style={{ marginTop: 6, fontSize: 11, color: T.textMuted }}>
-                    💡 Lines ending with <code style={{ background: "#0d1520", padding: "1px 5px", borderRadius: 3, color: T.greenLt }}>:</code> become section headers. All other lines become bullet points in the PDF.
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                    {/* LEFT — editable textarea */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <textarea
+                        value={scope}
+                        onChange={e => setScope(e.target.value)}
+                        placeholder={`Lines ending with colon become section headers.\n\nFor Sales:\nMulti-number team inbox\nNative WhatsApp-like app\n\nFor Marketing:\nCTWA Integration\nBulk broadcasts`}
+                        rows={12}
+                        style={{ ...baseInput, resize: "vertical", lineHeight: 1.7, fontSize: 13, height: "100%", minHeight: 220 }}
+                      />
+                      <div style={{ fontSize: 11, color: T.textMuted }}>
+                        💡 Lines ending with <code style={{ background: "#0d1520", padding: "1px 5px", borderRadius: 3, color: T.greenLt }}>:</code> = section headers · all others = bullets
+                      </div>
+                    </div>
+                    {/* RIGHT — live preview */}
+                    <div>
+                      <div style={{ fontSize: 10.5, color: T.textMuted, fontWeight: 600, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 8 }}>Live Preview</div>
+                      {scope.trim() ? (
+                        <div style={{ transform: "scale(0.88)", transformOrigin: "top left", width: "114%" }}>
+                          {renderScopeLines(scope)}
+                        </div>
+                      ) : (
+                        <div style={{ border: "1.5px dashed #1c2836", borderRadius: 10, padding: "28px 16px", textAlign: "center", color: T.textMuted, fontSize: 12 }}>
+                          Your scope preview<br />will appear here
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <AIScopeGenerator
+                    scope={scope}
                     onGenerated={(text) => setScope(text)}
                     planName={planData.name}
                     billing={effectiveBillingLabel}
