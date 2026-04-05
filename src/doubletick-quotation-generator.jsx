@@ -4,10 +4,15 @@ const DOUBLETICK_LOGO = "/dt logo.jpg";
 const SHIVAM_SIG = "/Shivam Sign.jpg";
 
 // ─── ENTERPRISE FEATURE GATING ────────────────────────────────────────────────
-const ENTERPRISE_TIERS = {
-  base: 10000,     // ≥ ₹10k/mo → Frictionless, SLA Breached alerts, CAPI Support
-  premium: 15000,  // ≥ ₹15k/mo → Enterprise Analytics
-};
+// ─── ENTERPRISE FEATURE GATING ────────────────────────────────────────────────
+// Each feature has its own unlock condition based on monthly equivalent AND
+// raw billing amount (for quarterly-specific thresholds).
+//
+// Feature unlock rules:
+//   CAPI Support         → monthly equiv ₹10k–12k  (free add-on in that range)
+//   Frictionless msg     → monthly equiv ₹10k–12k  OR  quarterly raw ≥ ₹30k
+//   SLA Breached alerts  → monthly equiv ₹10k–12k  OR  quarterly raw ₹20k–30k
+//   Enterprise Analytics → monthly equiv ₹15k–20k  OR  yearly raw with min ₹5k/mo equiv
 
 const ENTERPRISE_BASE_FEATURES = [
   "Team inbox (scalable agents)",
@@ -33,11 +38,6 @@ const ENTERPRISE_BASE_FEATURES = [
   "Complex journeys",
 ];
 
-const ENTERPRISE_TIER_FEATURES = {
-  base: ["Frictionless messaging", "SLA Breached alerts", "CAPI Support"],
-  premium: ["Enterprise Analytics"],
-};
-
 function getEnterpriseMonthlyEquivalent(customPrice, billing) {
   const raw = parseInt(String(customPrice).replace(/[^0-9]/g, ""), 10) || 0;
   if (billing === "monthly") return raw;
@@ -46,11 +46,41 @@ function getEnterpriseMonthlyEquivalent(customPrice, billing) {
   return raw;
 }
 
-function getEnterpriseFeatures(customPrice, billing) {
+// Returns {capi, frictionless, sla, analytics} — boolean for each feature
+function getEnterpriseEligibility(customPrice, billing) {
+  const raw = parseInt(String(customPrice).replace(/[^0-9]/g, ""), 10) || 0;
   const monthly = getEnterpriseMonthlyEquivalent(customPrice, billing);
+  const isQuarterly = billing === "quarterly";
+  const isYearly = billing === "yearly";
+
+  // CAPI Support: monthly equiv ₹10k–12k
+  const capi = monthly >= 10000 && monthly <= 12000;
+
+  // Frictionless messaging: monthly equiv ₹10k–12k OR quarterly raw ≥ ₹30k
+  const frictionless =
+    (monthly >= 10000 && monthly <= 12000) ||
+    (isQuarterly && raw >= 30000);
+
+  // SLA Breached alerts: monthly equiv ₹10k–12k OR quarterly raw ₹20k–30k
+  const sla =
+    (monthly >= 10000 && monthly <= 12000) ||
+    (isQuarterly && raw >= 20000 && raw <= 30000);
+
+  // Enterprise Analytics: monthly equiv ₹15k–20k OR yearly with ≥ ₹5k/mo equiv
+  const analytics =
+    (monthly >= 15000 && monthly <= 20000) ||
+    (isYearly && monthly >= 5000);
+
+  return { capi, frictionless, sla, analytics };
+}
+
+function getEnterpriseFeatures(customPrice, billing) {
+  const { capi, frictionless, sla, analytics } = getEnterpriseEligibility(customPrice, billing);
   const features = [...ENTERPRISE_BASE_FEATURES];
-  if (monthly >= ENTERPRISE_TIERS.base) features.push(...ENTERPRISE_TIER_FEATURES.base);
-  if (monthly >= ENTERPRISE_TIERS.premium) features.push(...ENTERPRISE_TIER_FEATURES.premium);
+  if (capi) features.push("CAPI Support");
+  if (frictionless) features.push("Frictionless messaging");
+  if (sla) features.push("SLA Breached alerts");
+  if (analytics) features.push("Enterprise Analytics");
   return features;
 }
 
@@ -153,32 +183,36 @@ async function generateScopeWithGroq({ notes, websiteOrBrochure, clientName, com
 
   const prompt = `You are a B2B SaaS sales expert at DoubleTick, a WhatsApp Business API CRM platform.
 
-Generate a professional Scope of Work for a quotation for:
-- Client: ${clientName} at ${companyName}
-- Plan: DoubleTick ${planName} (${billing} billing)
+Generate a professional Scope of Work for a sales quotation.
+
+Client: ${clientName} — ${companyName}
+Plan: DoubleTick ${planName} (${billing} billing)
 ${contextBlock}
 
-Sales rep discussion notes:
+Sales rep notes:
 ${notes}
 
-FORMAT RULES (strictly follow):
-- Section headers must end with a colon (:) — e.g. "For Sales:" or "Integration Requirements:"
-- Under each header, write bullet points as plain text (one per line, no dashes or symbols)
-- Leave a blank line between sections
-- 3-5 sections, 3-5 bullets each
-- Keep it professional, specific to their use case
-- Output ONLY the formatted scope text — no preamble or explanation
+STRICT FORMAT RULES — violating any of these rules makes the output unusable:
+1. Section headers MUST end with a colon only — e.g. "For Sales:" — nothing else on that line
+2. Each bullet point is plain text on its own line — no dashes, no numbers, no symbols, no markdown
+3. One blank line between sections — no blank lines within a section
+4. 3–5 sections total, 3–5 bullets per section
+5. NO emoji, NO emoji codes (like :rocket:), NO asterisks, NO bold, NO markdown
+6. NO introductory sentence, NO closing sentence, NO summary, NO sign-off
+7. Start directly with the first section header — nothing before it
+8. End on the last bullet point — nothing after it
 
-Example:
+Correct example output (follow this exact pattern):
 For Sales:
-Multi-number team inbox for field agents
-Real-time agent performance analytics
+Multi-number team inbox for all agents
+Real-time agent performance dashboard
 WhatsApp-based order confirmation flows
+Number masking for customer privacy
 
 For Marketing:
 Bulk broadcast campaigns to segmented lists
-CTWA ad integration for lead capture
-Automated follow-up sequences`;
+CTWA ad integration to reduce lead response time
+Automated drip sequences for lead nurturing`;
 
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
@@ -245,9 +279,9 @@ function renderScopeLines(scopeText) {
 
   return (
     <div style={{ border: "1px solid #c6f0da", borderRadius: 10, overflow: "hidden" }}>
-      <div style={{ background: "linear-gradient(135deg, #0b5235, #1aad74)", padding: "11px 20px", display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "rgba(255,255,255,0.5)", flexShrink: 0 }} />
-        <span style={{ fontSize: 12, fontWeight: 700, color: "#fff", letterSpacing: 0.4 }}>Scope of Work</span>
+      <div style={{ background: "linear-gradient(135deg, #0b5235, #1aad74)", padding: "9px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.7)", letterSpacing: 1, textTransform: "uppercase" }}>Category</span>
+        <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.7)", letterSpacing: 1, textTransform: "uppercase" }}>Deliverables</span>
       </div>
       {sections.map((section, si) => (
         <div key={si} style={{ display: "flex", borderBottom: si < sections.length - 1 ? "1px solid #e8f8f0" : "none", background: si % 2 === 0 ? "#f9fefe" : "#fff", breakInside: "avoid" }}>
@@ -381,22 +415,53 @@ function AIScopeGenerator({ scope, onGenerated, planName, billing, clientName, c
 function EnterpriseTierBadge({ customPrice, billing }) {
   const monthly = getEnterpriseMonthlyEquivalent(customPrice, billing);
   if (!customPrice || !monthly) return null;
-  const hasBase = monthly >= ENTERPRISE_TIERS.base;
-  const hasPremium = monthly >= ENTERPRISE_TIERS.premium;
+  const { capi, frictionless, sla, analytics } = getEnterpriseEligibility(customPrice, billing);
+  const raw = parseInt(String(customPrice).replace(/[^0-9]/g, ""), 10) || 0;
+  const isQuarterly = billing === "quarterly";
+  const isYearly = billing === "yearly";
+
+  const rows = [
+    {
+      label: "CAPI Support",
+      sublabel: "Free between ₹10k–12k/mo",
+      unlocked: capi,
+      hint: "₹10k–12k/mo",
+    },
+    {
+      label: "Frictionless Messaging",
+      sublabel: isQuarterly ? "₹10k–12k/mo equiv  or  ₹30k+ quarterly" : "₹10k–12k/mo equiv",
+      unlocked: frictionless,
+      hint: isQuarterly ? "₹10k–12k/mo or ₹30k/qtr" : "₹10k–12k/mo",
+    },
+    {
+      label: "SLA Breached Alerts",
+      sublabel: isQuarterly ? "₹10k–12k/mo equiv  or  ₹20k–30k quarterly" : "₹10k–12k/mo equiv",
+      unlocked: sla,
+      hint: isQuarterly ? "₹10k–12k/mo or ₹20k–30k/qtr" : "₹10k–12k/mo",
+    },
+    {
+      label: "Enterprise Analytics",
+      sublabel: isYearly ? "₹15k–20k/mo equiv  or  yearly ≥ ₹5k/mo" : "₹15k–20k/mo equiv",
+      unlocked: analytics,
+      hint: isYearly ? "₹15k–20k/mo or yearly ≥₹5k/mo" : "₹15k–20k/mo",
+    },
+  ];
 
   return (
-    <div style={{ marginTop: 12, display: "grid", gap: 6 }}>
-      <div style={{ fontSize: 10.5, color: "#3d5264", fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 2 }}>
-        Feature eligibility · ₹{fmtINR(monthly)}/mo equivalent
+    <div style={{ marginTop: 12, display: "grid", gap: 5 }}>
+      <div style={{ fontSize: 10, color: "#3d5264", fontWeight: 600, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 3 }}>
+        Feature eligibility · ₹{fmtINR(monthly)}/mo equiv
       </div>
-      {[
-        { label: "Frictionless messaging, SLA Breached alerts, CAPI Support", unlocked: hasBase, threshold: "₹10k/mo" },
-        { label: "Enterprise Analytics", unlocked: hasPremium, threshold: "₹15k/mo" },
-      ].map(({ label, unlocked, threshold }) => (
-        <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", borderRadius: 7, background: unlocked ? "rgba(23,160,102,0.08)" : "rgba(255,255,255,0.02)", border: `1px solid ${unlocked ? "#17a066" : "#1c2836"}` }}>
+      {rows.map(({ label, sublabel, unlocked, hint }) => (
+        <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 7, background: unlocked ? "rgba(23,160,102,0.08)" : "rgba(255,255,255,0.02)", border: `1px solid ${unlocked ? "#17a066" : "#1c2836"}` }}>
           <span style={{ fontSize: 11, flexShrink: 0 }}>{unlocked ? "✅" : "🔒"}</span>
-          <span style={{ fontSize: 11.5, color: unlocked ? "#21c47a" : "#3d5264", flex: 1 }}>{label}</span>
-          {!unlocked && <span style={{ fontSize: 10, color: "#3d5264", flexShrink: 0, whiteSpace: "nowrap" }}>requires {threshold}</span>}
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: unlocked ? "#21c47a" : "#6d8497" }}>{label}</div>
+            <div style={{ fontSize: 10, color: "#3d5264", marginTop: 1 }}>{sublabel}</div>
+          </div>
+          {!unlocked && (
+            <span style={{ fontSize: 10, color: "#3d5264", flexShrink: 0, whiteSpace: "nowrap", textAlign: "right" }}>requires {hint}</span>
+          )}
         </div>
       ))}
     </div>
@@ -678,10 +743,7 @@ export default function App() {
         <div style={{ padding: "24px 56px" }}>
           {scope && (
             <div style={{ marginBottom: 22 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                <div style={{ width: 4, height: 24, background: "#0b5235", borderRadius: 2, flexShrink: 0 }} />
-                <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 17, fontWeight: 700, color: "#0b5235", letterSpacing: 0.2 }}>Scope of Work</div>
-              </div>
+              <div style={{ marginBottom: 10 }} />
               <div style={{ marginTop: 4 }}>
                 {renderScopeLines(scope)}
               </div>
