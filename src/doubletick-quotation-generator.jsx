@@ -1269,31 +1269,57 @@ export default function App() {
                   </td>
                   <td style={pTdr}><strong>INR {fmtINR(planPrice)}/-</strong></td>
                 </tr>
-                {numericAddons.map((a, i) => (
-                  <tr key={a.id} style={{ background: i % 2 === 0 ? "#fff" : "#f7faf9" }}>
-                    <td style={pTdc}>{i + 2}</td>
-                    <td style={pTdl}>
-                      <div style={{ fontWeight: 500, color: "#374151" }}>
-                        {a.label}
-                        {iframeSelections[a.id] === "iframe" && a.iframeYearly && <span style={{ fontSize: 11, color: "#9ca3af", marginLeft: 6 }}>(with iframe)</span>}
-                      </div>
-                      {a.desc && <div style={{ fontSize: 10.5, color: "#9ca3af", marginTop: 2, fontStyle: "italic" }}>{a.desc}</div>}
-                    </td>
-                    <td style={pTdr}><strong>{getAddonPrintLabel(a)}</strong></td>
-                </tr>
-                ))}
-                {customAddons.map((a, i) => (
-                  <tr key={a.id} style={{ background: (numericAddons.length + i) % 2 === 0 ? "#fff" : "#f7faf9" }}>
-                    <td style={pTdc}>{numericAddons.length + i + 2}</td>
-                    <td style={pTdl}>{a.label}</td>
-                    <td style={{ ...pTdr, color: "#1aad74", fontStyle: "italic" }}>{a.custom || getAddonPrintLabel(a)}</td>
-                  </tr>
-                ))}
+                {[...numericAddons, ...customAddons].map((a, i) => {
+                  const isCustom = !!a.custom;
+                  const rowBg = i % 2 === 0 ? "#fff" : "#f7faf9";
+                  const linePrice = isCustom ? null : getAddonLinePrice(a);
+                  const discountedLine = linePrice != null ? Math.round(linePrice * addonDiscountFactor) : null;
+                  return (
+                    <tr key={a.id} style={{ background: rowBg }}>
+                      <td style={pTdc}>{i + 2}</td>
+                      <td style={pTdl}>
+                        <div style={{ fontWeight: 500, color: "#374151", lineHeight: 1.4 }}>
+                          {a.label}
+                          {iframeSelections[a.id] === "iframe" && a.iframeYearly && (
+                            <span style={{ fontSize: 11, color: "#9ca3af", marginLeft: 6 }}>(with iframe)</span>
+                          )}
+                        </div>
+                        {a.desc && (
+                          <div style={{ fontSize: 10.5, color: "#9ca3af", marginTop: 3, fontStyle: "italic", lineHeight: 1.5 }}>{a.desc}</div>
+                        )}
+                        {a.perUnit && getQty(a.id) > 1 && (
+                          <div style={{ fontSize: 10.5, color: "#9ca3af", marginTop: 2 }}>{getQty(a.id)} × {a.unitLabel} @ ₹{fmtINR(getAddonUnitPrice(a, plan, billing))}/{a.unitLabel}</div>
+                        )}
+                        {addonDiscount > 0 && discountedLine != null && discountedLine !== linePrice && (
+                          <div style={{ fontSize: 10.5, color: "#16a34a", marginTop: 2, fontWeight: 600 }}>{addonDiscount}% discount applied</div>
+                        )}
+                      </td>
+                      <td style={pTdr}>
+                        {isCustom ? (
+                          <span style={{ color: "#1aad74", fontStyle: "italic", fontWeight: 600 }}>{a.custom}</span>
+                        ) : (
+                          <>
+                            {addonDiscount > 0 && linePrice != null && (
+                              <div style={{ fontSize: 10.5, color: "#9ca3af", textDecoration: "line-through", textAlign: "right" }}>INR {fmtINR(linePrice)}/-</div>
+                            )}
+                            <strong>INR {fmtINR(discountedLine ?? linePrice)}/-</strong>
+                            <div style={{ fontSize: 10, color: "#9ca3af", fontWeight: 400 }}>{BILLING_LABELS[billing]}</div>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
                 {customAddonsList.map((ca, i) => (
-                  <tr key={ca.id} style={{ background: (numericAddons.length + customAddons.length + i) % 2 === 0 ? "#fff" : "#f7faf9" }}>
+                  <tr key={ca.id} style={{ background: ([...numericAddons, ...customAddons].length + i) % 2 === 0 ? "#fff" : "#f7faf9" }}>
                     <td style={pTdc}>{numericAddons.length + customAddons.length + i + 2}</td>
-                    <td style={pTdl}>{ca.label}</td>
-                    <td style={{ ...pTdr, color: "#1aad74", fontStyle: "italic" }}>{ca.price ? `INR ${Number(ca.price).toLocaleString("en-IN")}/-` : "—"} {ca.billing !== "custom" ? `(${ca.billing})` : ""}</td>
+                    <td style={pTdl}>
+                      <div style={{ fontWeight: 500, color: "#374151" }}>{ca.label}</div>
+                    </td>
+                    <td style={{ ...pTdr, color: "#1aad74", fontStyle: "italic" }}>
+                      {ca.price ? `INR ${Number(ca.price).toLocaleString("en-IN")}/-` : "—"}
+                      {ca.billing !== "custom" && <div style={{ fontSize: 10, color: "#9ca3af", fontWeight: 400 }}>{ca.billing}</div>}
+                    </td>
                   </tr>
                 ))}
                 {addonDiscount > 0 && (
@@ -1828,9 +1854,9 @@ export default function App() {
                   return (
                     <div key={groupName} style={{ marginBottom: 26 }}>
                       {/* Group header */}
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                        <div style={{ fontSize: 10, color: T.textMuted, textTransform: "uppercase", letterSpacing: 2, fontWeight: 700 }}>{groupName}</div>
-                        <div style={{ flex: 1, height: 1, background: T.border }} />
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                        <div style={{ fontSize: 9.5, color: "#4a6070", textTransform: "uppercase", letterSpacing: 2.5, fontWeight: 700, whiteSpace: "nowrap" }}>{groupName}</div>
+                        <div style={{ flex: 1, height: 1, background: "linear-gradient(to right, #1c2836, transparent)" }} />
                       </div>
                       <div style={{ display: "grid", gap: 8 }}>
                         {groupItems.map(a => {
@@ -1839,59 +1865,53 @@ export default function App() {
                           const unitPrice = getAddonUnitPrice(a, plan, billing);
                           const lineTotal = getAddonLinePrice(a);
                           return (
-                            <div key={a.id} style={{ borderRadius: 11, border: `1.5px solid ${on ? T.green : T.border}`, background: on ? "rgba(23,160,102,0.04)" : T.surface, transition: "all 0.15s", overflow: "hidden" }}>
+                            <div key={a.id} style={{ borderRadius: 12, border: `1.5px solid ${on ? T.green : T.border}`, background: on ? "rgba(23,160,102,0.04)" : "#0e1620", transition: "border-color 0.15s, background 0.15s", overflow: "hidden", boxShadow: on ? "0 0 0 1px rgba(23,160,102,0.15)" : "none" }}>
                               {/* Main row */}
-                              <div style={{ padding: "13px 16px", display: "flex", alignItems: "flex-start", gap: 13 }}>
+                              <div style={{ padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: 14 }}>
                                 {/* Checkbox */}
-                                <div
-                                  onClick={() => toggleAddon(a.id)}
-                                  style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${on ? T.green : T.borderMed}`, background: on ? T.green : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer", marginTop: 2, transition: "all 0.15s" }}
-                                >
+                                <div onClick={() => toggleAddon(a.id)} style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${on ? T.green : "#243242"}`, background: on ? T.green : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer", marginTop: 3, transition: "all 0.15s" }}>
                                   {on && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                                 </div>
                                 {/* Label + desc */}
-                                <div style={{ flex: 1, cursor: "pointer" }} onClick={() => toggleAddon(a.id)}>
-                                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-                                    <span style={{ fontSize: 13.5, fontWeight: 600, color: on ? T.text : T.textSub }}>{a.label}</span>
-                                    {a.isInstagram && <span style={{ fontSize: 10, background: "rgba(131,58,180,0.15)", color: "#c084fc", border: "1px solid rgba(192,132,252,0.3)", borderRadius: 10, padding: "1px 7px", fontWeight: 600 }}>New</span>}
+                                <div style={{ flex: 1, cursor: "pointer", minWidth: 0 }} onClick={() => toggleAddon(a.id)}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4, flexWrap: "wrap" }}>
+                                    <span style={{ fontSize: 13.5, fontWeight: 600, color: on ? "#e4eaf0" : "#6d8497", lineHeight: 1.3 }}>{a.label}</span>
+                                    {a.isInstagram && <span style={{ fontSize: 9.5, background: "rgba(131,58,180,0.18)", color: "#c084fc", border: "1px solid rgba(192,132,252,0.3)", borderRadius: 10, padding: "2px 8px", fontWeight: 700, letterSpacing: 0.3 }}>NEW</span>}
                                   </div>
-                                  {a.desc && <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.55 }}>{a.desc}</div>}
+                                  {a.desc && <div style={{ fontSize: 12, color: "#4a6070", lineHeight: 1.6, maxWidth: 380 }}>{a.desc}</div>}
                                 </div>
-                                {/* Price + qty */}
-                                <div style={{ flexShrink: 0, textAlign: "right" }}>
+                                {/* Price block */}
+                                <div style={{ flexShrink: 0, textAlign: "right", paddingLeft: 8 }}>
                                   {a.custom ? (
                                     <div style={{ fontSize: 12.5, fontWeight: 700, color: "#c084fc" }}>{a.custom}</div>
                                   ) : unitPrice != null ? (
                                     <>
-                                      <div style={{ fontSize: 13, fontWeight: 700, color: on ? T.greenLt : T.textSub }}>
+                                      <div style={{ fontSize: 14, fontWeight: 700, color: on ? "#21c47a" : "#6d8497", letterSpacing: "-0.3px" }}>
                                         ₹{fmtINR(unitPrice)}
-                                        {a.perUnit && <span style={{ fontSize: 10.5, fontWeight: 400, color: T.textMuted }}>/{a.unitLabel}</span>}
+                                        {a.perUnit && <span style={{ fontSize: 10, fontWeight: 500, color: "#3d5264" }}>/{a.unitLabel}</span>}
                                       </div>
-                                      <div style={{ fontSize: 10.5, color: T.textMuted }}>{BILLING_LABELS[billing]}</div>
+                                      <div style={{ fontSize: 10.5, color: "#3d5264", marginTop: 1 }}>{BILLING_LABELS[billing]}</div>
                                     </>
                                   ) : (
-                                    <div style={{ fontSize: 11, color: "#f59e0b", fontWeight: 600 }}>Not available</div>
+                                    <div style={{ fontSize: 11, color: "#f59e0b", fontWeight: 600, padding: "3px 8px", background: "rgba(245,158,11,0.08)", borderRadius: 6 }}>Not available</div>
                                   )}
                                 </div>
                               </div>
-                              {/* Quantity + line total row — only when selected and perUnit */}
+                              {/* Quantity row */}
                               {on && a.perUnit && unitPrice != null && (
-                                <div style={{ borderTop: `1px solid ${T.border}`, padding: "9px 16px 10px", background: "rgba(23,160,102,0.03)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                                    <span style={{ fontSize: 11.5, color: T.textMuted, marginRight: 8 }}>Quantity:</span>
-                                    <button
-                                      onClick={() => setAddonQty(q => ({ ...q, [a.id]: Math.max(1, (q[a.id] || 1) - 1) }))}
-                                      style={{ width: 26, height: 26, borderRadius: 6, border: `1px solid ${T.borderMed}`, background: "#0d1520", color: T.text, cursor: "pointer", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}
-                                    >−</button>
-                                    <span style={{ fontSize: 13, fontWeight: 700, color: T.text, minWidth: 28, textAlign: "center" }}>{qty}</span>
-                                    <button
-                                      onClick={() => setAddonQty(q => ({ ...q, [a.id]: (q[a.id] || 1) + 1 }))}
-                                      style={{ width: 26, height: 26, borderRadius: 6, border: `1px solid ${T.borderMed}`, background: "#0d1520", color: T.text, cursor: "pointer", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}
-                                    >+</button>
-                                    <span style={{ fontSize: 11, color: T.textMuted, marginLeft: 4 }}>{a.unitLabel}{qty > 1 ? "s" : ""}</span>
+                                <div style={{ borderTop: `1px solid ${T.border}`, padding: "10px 16px", background: "rgba(23,160,102,0.04)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    <span style={{ fontSize: 11, color: "#4a6070", fontWeight: 500, letterSpacing: 0.3 }}>QTY</span>
+                                    <div style={{ display: "flex", alignItems: "center", background: "#0b1015", border: `1px solid #1c2836`, borderRadius: 8, overflow: "hidden" }}>
+                                      <button onClick={() => setAddonQty(q => ({ ...q, [a.id]: Math.max(1, (q[a.id] || 1) - 1) }))} style={{ width: 30, height: 30, background: "transparent", border: "none", color: "#e4eaf0", cursor: "pointer", fontSize: 16, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.1s" }} onMouseEnter={e => e.target.style.background="#1c2836"} onMouseLeave={e => e.target.style.background="transparent"}>−</button>
+                                      <span style={{ fontSize: 13, fontWeight: 700, color: "#e4eaf0", minWidth: 32, textAlign: "center", borderLeft: "1px solid #1c2836", borderRight: "1px solid #1c2836", lineHeight: "30px" }}>{qty}</span>
+                                      <button onClick={() => setAddonQty(q => ({ ...q, [a.id]: (q[a.id] || 1) + 1 }))} style={{ width: 30, height: 30, background: "transparent", border: "none", color: "#e4eaf0", cursor: "pointer", fontSize: 16, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.1s" }} onMouseEnter={e => e.target.style.background="#1c2836"} onMouseLeave={e => e.target.style.background="transparent"}>+</button>
+                                    </div>
+                                    <span style={{ fontSize: 11.5, color: "#4a6070" }}>{a.unitLabel}{qty > 1 ? "s" : ""}</span>
                                   </div>
-                                  <div style={{ fontSize: 13, fontWeight: 700, color: T.greenLt }}>
-                                    ₹{fmtINR(lineTotal)} <span style={{ fontSize: 11, fontWeight: 400, color: T.textMuted }}>{BILLING_LABELS[billing]}</span>
+                                  <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
+                                    <span style={{ fontSize: 14, fontWeight: 700, color: "#21c47a" }}>₹{fmtINR(lineTotal)}</span>
+                                    <span style={{ fontSize: 10.5, color: "#3d5264" }}>{BILLING_LABELS[billing]}</span>
                                   </div>
                                 </div>
                               )}
@@ -1905,9 +1925,9 @@ export default function App() {
 
                 {/* Custom Add-on */}
                 <div style={{ marginTop: 4, marginBottom: 16 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                    <div style={{ fontSize: 10, color: T.textMuted, textTransform: "uppercase", letterSpacing: 2, fontWeight: 700 }}>Custom Add-on</div>
-                    <div style={{ flex: 1, height: 1, background: T.border }} />
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                    <div style={{ fontSize: 9.5, color: "#4a6070", textTransform: "uppercase", letterSpacing: 2.5, fontWeight: 700 }}>Custom Add-on</div>
+                    <div style={{ flex: 1, height: 1, background: "linear-gradient(to right, #1c2836, transparent)" }} />
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto auto", gap: 8, alignItems: "center" }}>
                     <input value={newCustomAddon.label} onChange={e => setNewCustomAddon(p => ({ ...p, label: e.target.value }))} placeholder="Add-on name / description" style={{ ...baseInput, fontSize: 13, padding: "9px 12px" }} />
