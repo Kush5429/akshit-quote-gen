@@ -892,6 +892,64 @@ function EnterpriseTierBadge({ customPrice, billing }) {
 }
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
+// ─── REUSABLE DISCOUNT PANEL ─────────────────────────────────────────────────
+function DiscountPanel({ label, sub, value, onChange, previewOriginal, previewFinal, previewLabel }) {
+  const presets = [0, 5, 10, 15, 20, 25, 30];
+  const isCustom = !presets.includes(value) && value > 0;
+  return (
+    <div style={{ marginTop: 18, background: "#111820", borderRadius: 12, border: `1.5px solid ${value > 0 ? "#17a066" : "#1c2836"}`, transition: "border-color 0.2s", overflow: "hidden" }}>
+      <div style={{ padding: "14px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <div>
+          <div style={{ fontSize: 13.5, fontWeight: 600, color: "#e4eaf0" }}>{label}</div>
+          <div style={{ fontSize: 11.5, color: "#3d5264", marginTop: 2 }}>{sub} · max 30%</div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+          {presets.map(v => (
+            <button key={v} onClick={() => onChange(v)}
+              style={{ padding: "5px 12px", borderRadius: 7, border: `1.5px solid ${value === v ? "#17a066" : "#1c2836"}`, background: value === v ? "rgba(23,160,102,0.18)" : "transparent", color: value === v ? "#21c47a" : "#6d8497", cursor: "pointer", fontSize: 12, fontWeight: 600, transition: "all 0.12s" }}>
+              {v === 0 ? "None" : `${v}%`}
+            </button>
+          ))}
+          <div style={{ display: "flex", alignItems: "center", gap: 4, border: `1.5px solid ${isCustom ? "#17a066" : "#1c2836"}`, borderRadius: 7, padding: "4px 9px", background: isCustom ? "rgba(23,160,102,0.12)" : "transparent", minWidth: 72 }}>
+            <input type="number" min={0} max={30} step={0.5} value={value === 0 ? "" : value}
+              onChange={e => { const v = parseFloat(e.target.value); if (e.target.value === "") { onChange(0); return; } if (!isNaN(v) && v >= 0 && v <= 30) onChange(Math.round(v * 10) / 10); }}
+              placeholder="0.0" style={{ width: 42, background: "transparent", border: "none", outline: "none", color: "#21c47a", fontSize: 12.5, fontWeight: 700, fontFamily: "inherit" }} />
+            <span style={{ fontSize: 12, color: "#3d5264" }}>%</span>
+          </div>
+        </div>
+      </div>
+      {value > 0 && (
+        <>
+          <div style={{ margin: "0 18px", height: 1, background: "#1c2836" }} />
+          <div style={{ padding: "12px 18px", display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ flex: 1 }}>
+              <input type="range" min={0} max={30} step={0.5} value={value}
+                onChange={e => onChange(Math.round(Number(e.target.value) * 10) / 10)}
+                style={{ width: "100%", accentColor: "#17a066", cursor: "pointer", height: 4 }} />
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#3d5264", marginTop: 4 }}>
+                {[0, 5, 10, 15, 20, 25, 30].map(v => <span key={v}>{v}%</span>)}
+              </div>
+            </div>
+            <div style={{ flexShrink: 0, textAlign: "right" }}>
+              <div style={{ fontSize: 24, fontWeight: 800, color: "#21c47a", lineHeight: 1 }}>{value}%</div>
+              <div style={{ fontSize: 10, color: "#3d5264", marginTop: 2 }}>off</div>
+            </div>
+          </div>
+          {previewOriginal != null && (
+            <div style={{ margin: "0 18px 14px", padding: "10px 14px", background: "rgba(23,160,102,0.05)", borderRadius: 8, border: "1px solid rgba(23,160,102,0.15)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 12.5, color: "#6d8497" }}>{previewLabel}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 12, color: "#3d5264", textDecoration: "line-through" }}>₹{previewOriginal.toLocaleString("en-IN")}</span>
+                <span style={{ fontSize: 15, fontWeight: 700, color: "#21c47a" }}>₹{previewFinal.toLocaleString("en-IN")}</span>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function App() {
   const [step, setStep] = useState(1);
   const [clientName, setClientName] = useState("");
@@ -901,6 +959,7 @@ export default function App() {
   const [billing, setBilling] = useState("quarterly");
   const [plan, setPlan] = useState("pro");
   const [addonQty, setAddonQty] = useState({}); // { addonId: quantity }
+  const [addonDiscount, setAddonDiscount] = useState(0); // 0-30%
   const [enterpriseAIBots, setEnterpriseAIBots] = useState(false);
   const [enterpriseCustomPrice, setEnterpriseCustomPrice] = useState("");
   const [addons, setAddons] = useState([]);
@@ -955,7 +1014,7 @@ export default function App() {
     const t = {
       id: Date.now(),
       name: templateName.trim(),
-      plan, billing, addons, iframeSelections, discount,
+      plan, billing, addons, iframeSelections, discount, addonDiscount,
       enterpriseCustomPrice, enterpriseAIBots,
       customAddonsList, customFeatures,
       createdAt: new Date().toLocaleDateString("en-IN"),
@@ -973,6 +1032,7 @@ export default function App() {
     setAddons(Array.isArray(t.addons) ? t.addons : []);
     setIframeSelections(t.iframeSelections && typeof t.iframeSelections === "object" ? t.iframeSelections : {});
     setDiscount(typeof t.discount === "number" ? t.discount : 0);
+    setAddonDiscount(typeof t.addonDiscount === "number" ? t.addonDiscount : 0);
     setEnterpriseCustomPrice(t.enterpriseCustomPrice ?? "");
     setEnterpriseAIBots(t.enterpriseAIBots === true);
     setCustomAddonsList(Array.isArray(t.customAddonsList) ? t.customAddonsList : []);
@@ -1070,8 +1130,10 @@ export default function App() {
 
   const numericAddons = selAddons.filter(a => getAddonLinePrice(a) != null);
   const customAddons = selAddons.filter(a => getAddonLinePrice(a) == null);
-  const addonSum = numericAddons.reduce((s, a) => s + getAddonLinePrice(a), 0)
+  const addonDiscountFactor = 1 - addonDiscount / 100;
+  const addonSumOriginal = numericAddons.reduce((s, a) => s + getAddonLinePrice(a), 0)
     + customAddonsList.reduce((s, ca) => s + (parseInt(ca.price) || 0), 0);
+  const addonSum = Math.round(addonSumOriginal * addonDiscountFactor);
   const total = planPrice + addonSum;
   const totalGST = Math.round(total * 1.18);
   const teamName = companyName || "Client";
@@ -1215,14 +1277,7 @@ export default function App() {
                         {a.label}
                         {iframeSelections[a.id] === "iframe" && a.iframeYearly && <span style={{ fontSize: 11, color: "#9ca3af", marginLeft: 6 }}>(with iframe)</span>}
                       </div>
-                      {(() => {
-                        const unit = getAddonUnitPrice(a, plan, billing);
-                        const qty = getQty(a.id);
-                        if (a.custom) return <div style={{ fontSize: 10.5, color: "#9ca3af", marginTop: 2 }}>{a.custom}</div>;
-                        if (unit && a.perUnit) return <div style={{ fontSize: 10.5, color: "#9ca3af", marginTop: 2 }}>₹{fmtINR(unit)}/{a.unitLabel} × {qty} {a.unitLabel}{qty > 1 ? "s" : ""}</div>;
-                        if (unit) return <div style={{ fontSize: 10.5, color: "#9ca3af", marginTop: 2 }}>₹{fmtINR(unit)} {BILLING_LABELS[billing] || ""}</div>;
-                        return null;
-                      })()}
+                      {a.desc && <div style={{ fontSize: 10.5, color: "#9ca3af", marginTop: 2, fontStyle: "italic" }}>{a.desc}</div>}
                     </td>
                     <td style={pTdr}><strong>{getAddonPrintLabel(a)}</strong></td>
                 </tr>
@@ -1241,6 +1296,13 @@ export default function App() {
                     <td style={{ ...pTdr, color: "#1aad74", fontStyle: "italic" }}>{ca.price ? `INR ${Number(ca.price).toLocaleString("en-IN")}/-` : "—"} {ca.billing !== "custom" ? `(${ca.billing})` : ""}</td>
                   </tr>
                 ))}
+                {addonDiscount > 0 && (
+                  <tr style={{ background: "#f0fdf8" }}>
+                    <td style={pTdc}>—</td>
+                    <td style={{ ...pTdl, color: "#16a34a", fontWeight: 600 }}>Add-on Discount ({addonDiscount}% applied)</td>
+                    <td style={{ ...pTdr, color: "#16a34a", fontWeight: 700 }}>−INR {fmtINR(addonSumOriginal - addonSum)}/-</td>
+                  </tr>
+                )}
                 <tr>
                   <td colSpan={2} style={{ padding: "12px 16px", textAlign: "right", fontSize: 12.5, color: "#6b7280", borderTop: "1.5px solid #d1fae5" }}>Subtotal + 18% GST</td>
                   <td style={{ padding: "12px 16px", textAlign: "right", fontSize: 15, fontWeight: 700, color: "#0b5235", borderTop: "1.5px solid #d1fae5" }}>INR {fmtINR(totalGST)}/-</td>
@@ -1739,44 +1801,16 @@ export default function App() {
                   </div>
                 </div>
 
-                <div style={{ marginTop: 18, padding: "16px 18px", background: T.surfaceHigh, borderRadius: 11, border: `1px solid ${discount > 0 ? T.green : T.border}`, transition: "border-color 0.2s" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: discount > 0 ? 14 : 0 }}>
-                    <div>
-                      <div style={{ fontSize: 13.5, fontWeight: 600, color: T.text }}>Apply Discount</div>
-                      <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 2 }}>Maximum 30% — applies to plan price only</div>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-                      {[0, 5, 10, 15, 20, 25, 30].map(v => (
-                        <button key={v} onClick={() => setDiscount(v)} style={{ padding: "5px 11px", borderRadius: 6, border: `1.5px solid ${discount === v ? T.green : T.border}`, background: discount === v ? "rgba(23,160,102,0.15)" : "transparent", color: discount === v ? T.greenLt : T.textSub, cursor: "pointer", fontSize: 12, fontWeight: 600, transition: "all 0.12s" }}>{v === 0 ? "None" : `${v}%`}</button>
-                      ))}
-                      <div style={{ display: "flex", alignItems: "center", gap: 4, border: `1.5px solid ${![0,5,10,15,20,25,30].includes(discount) && discount > 0 ? T.green : T.border}`, borderRadius: 6, padding: "4px 8px", background: ![0,5,10,15,20,25,30].includes(discount) && discount > 0 ? "rgba(23,160,102,0.15)" : "transparent" }}>
-                        <input type="number" min={0} max={30} step={0.1} value={discount === 0 ? "" : discount} onChange={e => { const val = parseFloat(e.target.value); if (e.target.value === "") { setDiscount(0); return; } if (!isNaN(val) && val >= 0 && val <= 30) setDiscount(Math.round(val * 10) / 10); }} placeholder="e.g. 12.5" onClick={e => e.stopPropagation()} style={{ width: 60, background: "transparent", border: "none", outline: "none", color: T.greenLt, fontSize: 12, fontWeight: 600, fontFamily: "inherit" }} />
-                        <span style={{ fontSize: 12, color: T.textMuted }}>%</span>
-                      </div>
-                    </div>
-                  </div>
-                  {discount > 0 && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 12, paddingTop: 12, borderTop: `1px solid ${T.border}` }}>
-                      <div style={{ flex: 1 }}>
-                        <input type="range" min={0} max={30} step={0.1} value={discount} onChange={e => setDiscount(Math.round(Number(e.target.value) * 10) / 10)} style={{ width: "100%", accentColor: T.green, cursor: "pointer" }} />
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: T.textMuted, marginTop: 2 }}><span>0%</span><span>5%</span><span>10%</span><span>15%</span><span>20%</span><span>25%</span><span>30%</span></div>
-                      </div>
-                      <div style={{ textAlign: "right", flexShrink: 0, minWidth: 90 }}>
-                        <div style={{ fontSize: 22, fontWeight: 800, color: T.greenLt }}>{discount}%</div>
-                        <div style={{ fontSize: 11, color: T.textMuted }}>discount</div>
-                      </div>
-                    </div>
-                  )}
-                  {discount > 0 && (
-                    <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(23,160,102,0.06)", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 12.5, color: T.textSub }}>Plan price after {discount}% discount</span>
-                      <div style={{ textAlign: "right" }}>
-                        <span style={{ fontSize: 12, color: T.textMuted, textDecoration: "line-through", marginRight: 8 }}>₹{fmtINR(planPriceOriginal)}</span>
-                        <span style={{ fontSize: 15, fontWeight: 700, color: T.greenLt }}>₹{fmtINR(planPrice)}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                {/* ── DISCOUNT PANEL ── */}
+                <DiscountPanel
+                  label="Plan Discount"
+                  sub="Applies to plan base price only"
+                  value={discount}
+                  onChange={setDiscount}
+                  previewOriginal={planPriceOriginal}
+                  previewFinal={planPrice}
+                  previewLabel="Plan price after discount"
+                />
                 <NavBtns prev={() => setStep(1)} next={() => setStep(3)} />
               </PanelCard>
             </>
@@ -1903,32 +1937,77 @@ export default function App() {
                   )}
                 </div>
 
-                {/* Running total */}
+                {/* ── ADDON DISCOUNT ── */}
                 {(addons.length > 0 || customAddonsList.length > 0) && (
-                  <div style={{ marginTop: 18, padding: "16px 18px", background: T.surfaceHigh, borderRadius: 11, border: `1px solid ${T.green}` }}>
-                    <div style={{ fontSize: 10, color: T.textMuted, textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 700, marginBottom: 12 }}>Running Total</div>
-                    <div style={{ fontSize: 13, color: T.textSub, display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                      <span>{planData.name} Plan</span><span style={{ fontWeight: 600 }}>₹{fmtINR(planPrice)}</span>
+                  <DiscountPanel
+                    label="Add-on Discount"
+                    sub="Applies to all numeric add-ons"
+                    value={addonDiscount}
+                    onChange={setAddonDiscount}
+                    previewOriginal={addonDiscount > 0 ? addonSumOriginal : null}
+                    previewFinal={addonDiscount > 0 ? addonSum : null}
+                    previewLabel="Add-ons total after discount"
+                  />
+                )}
+
+                {/* ── RUNNING TOTAL ── */}
+                {(addons.length > 0 || customAddonsList.length > 0) && (
+                  <div style={{ marginTop: 14, background: "#0d1520", borderRadius: 12, border: `1px solid #1c2836`, overflow: "hidden" }}>
+                    <div style={{ padding: "12px 18px", borderBottom: "1px solid #1c2836", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 10, color: "#3d5264", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5 }}>Running Total</span>
+                      <span style={{ fontSize: 11, color: "#3d5264" }}>{addons.length} add-on{addons.length !== 1 ? "s" : ""} selected</span>
                     </div>
-                    {numericAddons.map(a => (
-                      <div key={a.id} style={{ fontSize: 12.5, color: T.textMuted, display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                        <span>{a.label}{a.perUnit && getQty(a.id) > 1 ? ` ×${getQty(a.id)}` : ""}</span>
-                        <span>₹{fmtINR(getAddonLinePrice(a))}</span>
+                    <div style={{ padding: "14px 18px" }}>
+                      {/* Plan row */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, paddingBottom: 10, borderBottom: "1px solid #1c2836" }}>
+                        <span style={{ fontSize: 13, color: "#6d8497" }}>{planData.name} Plan</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: "#e4eaf0" }}>₹{fmtINR(planPrice)}</span>
                       </div>
-                    ))}
-                    {customAddons.map(a => (
-                      <div key={a.id} style={{ fontSize: 12.5, color: "#c084fc", display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                        <span>{a.label}</span><span>Custom</span>
+                      {/* Addon rows */}
+                      {numericAddons.map(a => {
+                        const raw = getAddonLinePrice(a);
+                        const discounted = Math.round(raw * addonDiscountFactor);
+                        return (
+                          <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 7 }}>
+                            <span style={{ fontSize: 12.5, color: "#6d8497", flex: 1, paddingRight: 10 }}>
+                              {a.label}{a.perUnit && getQty(a.id) > 1 ? <span style={{ color: "#3d5264", fontSize: 11 }}> ×{getQty(a.id)}</span> : ""}
+                            </span>
+                            <div style={{ textAlign: "right", flexShrink: 0 }}>
+                              {addonDiscount > 0 && <div style={{ fontSize: 11, color: "#3d5264", textDecoration: "line-through" }}>₹{fmtINR(raw)}</div>}
+                              <span style={{ fontSize: 12.5, fontWeight: 600, color: addonDiscount > 0 ? "#21c47a" : "#e4eaf0" }}>₹{fmtINR(discounted)}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {customAddons.map(a => (
+                        <div key={a.id} style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}>
+                          <span style={{ fontSize: 12.5, color: "#6d8497" }}>{a.label}</span>
+                          <span style={{ fontSize: 12, color: "#c084fc", fontStyle: "italic" }}>Custom</span>
+                        </div>
+                      ))}
+                      {customAddonsList.map(ca => (
+                        <div key={ca.id} style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}>
+                          <span style={{ fontSize: 12.5, color: "#6d8497" }}>{ca.label}</span>
+                          <span style={{ fontSize: 12.5, color: "#e4eaf0", fontWeight: 600 }}>{ca.price ? `₹${Number(ca.price).toLocaleString("en-IN")}` : "—"}</span>
+                        </div>
+                      ))}
+                      {/* Subtotals */}
+                      {addonDiscount > 0 && (
+                        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, padding: "8px 10px", background: "rgba(23,160,102,0.06)", borderRadius: 7 }}>
+                          <span style={{ fontSize: 12, color: "#21c47a" }}>Add-on discount ({addonDiscount}%)</span>
+                          <span style={{ fontSize: 12, color: "#21c47a", fontWeight: 600 }}>−₹{fmtINR(addonSumOriginal - addonSum)}</span>
+                        </div>
+                      )}
+                      {/* Grand total */}
+                      <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #1c2836", display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: "#e4eaf0" }}>Total incl. 18% GST</div>
+                          <div style={{ fontSize: 11, color: "#3d5264", marginTop: 2 }}>Plan + add-ons + tax</div>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontSize: 20, fontWeight: 800, color: "#21c47a" }}>₹{fmtINR(totalGST)}</div>
+                        </div>
                       </div>
-                    ))}
-                    {customAddonsList.map(ca => (
-                      <div key={ca.id} style={{ fontSize: 12.5, color: T.textMuted, display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                        <span>{ca.label}</span>
-                        <span>{ca.price ? `₹${Number(ca.price).toLocaleString("en-IN")} (${ca.billing})` : "Custom"}</span>
-                      </div>
-                    ))}
-                    <div style={{ borderTop: `1px solid ${T.border}`, marginTop: 10, paddingTop: 10, display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: 15, color: T.greenLt }}>
-                      <span>Total incl. 18% GST</span><span>₹{fmtINR(totalGST)}</span>
                     </div>
                   </div>
                 )}
@@ -2032,7 +2111,7 @@ export default function App() {
                     <span style={{ fontSize: 11, color: T.textMuted, fontWeight: 600 }}>{qid}</span>
                   </div>
                   <div style={{ padding: "18px 20px" }}>
-                    {[["Client", clientName], ["Company", companyName], email && ["Email", email], ["Plan", `${planData.name} · ${effectiveBillingLabel}`], ["Plan Price", `₹${fmtINR(planPrice)} + 18% GST`], plan === "enterprise" && ["Enterprise Type", enterpriseAIBots ? "With AI Bots" : "Without AI Bots"], addons.length > 0 && ["Add-ons", `${addons.length} selected`], expiryDate && ["Valid Until", new Date(expiryDate).toLocaleDateString("en-IN", {day:"numeric",month:"long",year:"numeric"})], includeROI && ["ROI Page", "Included"]].filter(Boolean).map(([l, v]) => (
+                    {[["Client", clientName], ["Company", companyName], email && ["Email", email], ["Plan", `${planData.name} · ${effectiveBillingLabel}`], ["Plan Price", `₹${fmtINR(planPrice)} + 18% GST`], discount > 0 && ["Plan Discount", `${discount}% applied`], plan === "enterprise" && ["Enterprise Type", enterpriseAIBots ? "With AI Bots" : "Without AI Bots"], addons.length > 0 && ["Add-ons", `${addons.length} selected`], addonDiscount > 0 && ["Add-on Discount", `${addonDiscount}% applied`], expiryDate && ["Valid Until", new Date(expiryDate).toLocaleDateString("en-IN", {day:"numeric",month:"long",year:"numeric"})], includeROI && ["ROI Page", "Included"]].filter(Boolean).map(([l, v]) => (
                       <div key={l} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${T.border}` }}>
                         <span style={{ color: T.textMuted, fontSize: 13 }}>{l}</span>
                         <span style={{ color: T.text, fontSize: 13, fontWeight: 500 }}>{v}</span>
