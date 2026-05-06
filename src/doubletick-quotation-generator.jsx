@@ -202,6 +202,169 @@ const ADDON_CATALOG = [
     monthly: 60, quarterly: 180, halfYearly: 360, yearly: 720,
     perUnit: true, unitLabel: "group",
   },
+  // ── INTEGRATIONS ───────────────────────────────────────────────────────────
+  {
+    id: "zoho_crm",
+    group: "Integrations",
+    label: "Zoho CRM Integration",
+    desc: "Sync leads, contacts, and deals between DoubleTick and Zoho CRM.",
+    plans: ["pro", "enterprise", "standard"],
+    monthly: null, quarterly: 5000, halfYearly: null, yearly: 20000,
+    iframeYearly: 25000,
+    perUnit: false,
+  },
+  {
+    id: "hubspot",
+    group: "Integrations",
+    label: "HubSpot Integration",
+    desc: "Connect HubSpot contacts and deal pipelines with WhatsApp conversations.",
+    plans: ["pro", "enterprise", "standard"],
+    monthly: null, quarterly: 5000, halfYearly: null, yearly: 18000,
+    perUnit: false,
+  },
+  {
+    id: "indiamart",
+    group: "Integrations",
+    label: "IndiaMart Integration",
+    desc: "Automatically capture and respond to IndiaMart leads via WhatsApp.",
+    plans: ["pro", "enterprise", "standard"],
+    monthly: null, quarterly: 5000, halfYearly: null, yearly: 18000,
+    perUnit: false,
+  },
+  {
+    id: "leadsquared",
+    group: "Integrations",
+    label: "LeadSquared Integration",
+    desc: "Sync leads from LeadSquared and trigger WhatsApp workflows automatically.",
+    plans: ["pro", "enterprise", "standard"],
+    monthly: null, quarterly: 5000, halfYearly: null, yearly: 18000,
+    iframeYearly: 25000,
+    perUnit: false,
+  },
+  {
+    id: "bitrix",
+    group: "Integrations",
+    label: "Bitrix Integration",
+    desc: "Connect Bitrix24 CRM tasks and contacts with DoubleTick conversations.",
+    plans: ["pro", "enterprise", "standard"],
+    monthly: null, quarterly: 5000, halfYearly: null, yearly: 18000,
+    perUnit: false,
+  },
+  {
+    id: "salesforce",
+    group: "Integrations",
+    label: "Salesforce Integration",
+    desc: "Bi-directional sync between Salesforce CRM and WhatsApp conversations.",
+    plans: ["pro", "enterprise", "standard"],
+    monthly: null, quarterly: 12500, halfYearly: null, yearly: 50000,
+    iframeYearly: 90000,
+    perUnit: false,
+  },
+  {
+    id: "shopify",
+    group: "Integrations",
+    label: "Shopify Integration",
+    desc: "Connect your Shopify store to send order updates and support via WhatsApp.",
+    plans: ["pro", "enterprise", "standard"],
+    monthly: 0, quarterly: 0, halfYearly: 0, yearly: 0,
+    perUnit: false,
+  },
+  {
+    id: "woocommerce",
+    group: "Integrations",
+    label: "WooCommerce Integration",
+    desc: "Sync WooCommerce orders and trigger automated WhatsApp notifications.",
+    plans: ["pro", "enterprise", "standard"],
+    monthly: null, quarterly: null, halfYearly: null, yearly: 18000,
+    perUnit: false,
+  },
+  // ── PLATFORM EXTRAS ────────────────────────────────────────────────────────
+  {
+    id: "ai_chatbots",
+    group: "Platform Extras",
+    label: "AI Chat Bots (ChatGPT-Based)",
+    desc: "Deploy AI-powered chatbots for automated customer conversations. Requires ChatGPT Plus subscription.",
+    plans: ["pro", "enterprise", "standard"],
+    monthly: 15000, quarterly: 45000, halfYearly: null, yearly: 180000,
+    perUnit: false,
+  },
+  {
+    id: "key_account",
+    group: "Platform Extras",
+    label: "Key Account Manager",
+    desc: "Dedicated KAM for strategic guidance, relationship management, and business reviews.",
+    plans: ["pro", "enterprise", "standard"],
+    monthly: 10000, quarterly: 30000, halfYearly: null, yearly: 120000,
+    perUnit: false,
+  },
+  {
+    id: "managerial",
+    group: "Platform Extras",
+    label: "Managerial Services",
+    desc: "Complete account management — our team handles day-to-day operations on your behalf.",
+    plans: ["pro", "enterprise", "standard"],
+    monthly: 35000, quarterly: 105000, halfYearly: null, yearly: 420000,
+    perUnit: false,
+  },
+  {
+    id: "ai_filtered",
+    group: "Platform Extras",
+    label: "AI Filtered Awaiting Reply",
+    desc: "AI prioritises chats needing agent attention, reducing inbox noise significantly.",
+    plans: ["pro", "enterprise", "standard"],
+    monthly: 5000, quarterly: 15000, halfYearly: null, yearly: 60000,
+    perUnit: false,
+  },
+  {
+    id: "collaborators",
+    group: "Platform Extras",
+    label: "Collaborators",
+    desc: "Add external collaborators with limited access to specific conversations or projects.",
+    plans: ["pro", "enterprise", "standard"],
+    monthly: 7000, quarterly: 21000, halfYearly: null, yearly: 84000,
+    perUnit: false,
+  },
+  // ── ONE-TIME & USAGE ────────────────────────────────────────────────────────
+  {
+    id: "bot_building",
+    group: "One-Time & Usage",
+    label: "Bot Building (up to 15 components)",
+    desc: "Custom chatbot design and build — up to 15 conversation components.",
+    plans: ["pro", "enterprise", "standard"],
+    monthly: null, quarterly: null, halfYearly: null, yearly: null,
+    custom: "₹20,000 one-time",
+    perUnit: false,
+  },
+  {
+    id: "bluetick",
+    group: "One-Time & Usage",
+    label: "BlueTick Verified Badge",
+    desc: "Official Meta WhatsApp green tick verification for your business number.",
+    plans: ["pro", "enterprise", "standard"],
+    monthly: null, quarterly: null, halfYearly: null, yearly: null,
+    custom: "₹40,000 one-time",
+    perUnit: false,
+  },
+  {
+    id: "magic_text",
+    group: "One-Time & Usage",
+    label: "Magic Text Wand (AI Reply / Text Assist)",
+    desc: "AI suggests replies and improves agent messages in real time.",
+    plans: ["pro", "enterprise", "standard"],
+    monthly: null, quarterly: null, halfYearly: null, yearly: null,
+    custom: "₹1 / daily active chat",
+    perUnit: false,
+  },
+  {
+    id: "ai_summary",
+    group: "One-Time & Usage",
+    label: "AI Summary",
+    desc: "Automatically summarises long chat threads so agents catch up instantly.",
+    plans: ["pro", "enterprise", "standard"],
+    monthly: null, quarterly: null, halfYearly: null, yearly: null,
+    custom: "₹2 / daily summary",
+    perUnit: false,
+  },
 ];
 
 // Derive flat addon list for a given plan + billing
@@ -1030,24 +1193,37 @@ export default function App() {
                   <td style={pTdl}>
                     DoubleTick {planData.name} Plan &mdash; {effectiveBillingLabel}
                     {discount > 0 && <div style={{ fontSize: 11, color: "#1aad74", marginTop: 2, fontWeight: 600 }}>{discount}% discount applied · Original: ₹{fmtINR(planPriceOriginal)}</div>}
-                    {plan === "enterprise" && (
-                      <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>
-                        {(() => {
-                          const billingMonths = billing === "yearly" ? 12 : billing === "quarterly" ? 3 : 1;
-                          const baseMonthly = Math.round(basePlanPrice / billingMonths);
-                          return enterpriseAIBots
-                            ? `Without AI Bots: ₹${fmtINR(baseMonthly)}/mo + AI Bots: ₹15,000/mo`
-                            : `Base: ₹${fmtINR(baseMonthly)}/month`;
-                        })()}
-                      </div>
-                    )}
+                    {(() => {
+                      const billingMonths = { monthly: 1, quarterly: 3, halfYearly: 6, yearly: 12 }[billing] || 1;
+                      const baseMonthly = Math.round(basePlanPrice / billingMonths);
+                      return baseMonthly > 0 ? (
+                        <div style={{ fontSize: 10.5, color: "#9ca3af", marginTop: 2 }}>
+                          {plan === "enterprise" && enterpriseAIBots
+                            ? `Base: ₹${fmtINR(Math.round((basePlanPrice - aiBotsAddon) / billingMonths))}/mo + AI Bots: ₹15,000/mo`
+                            : `Base: ₹${fmtINR(baseMonthly)}/month`}
+                        </div>
+                      ) : null;
+                    })()}
                   </td>
                   <td style={pTdr}><strong>INR {fmtINR(planPrice)}/-</strong></td>
                 </tr>
                 {numericAddons.map((a, i) => (
                   <tr key={a.id} style={{ background: i % 2 === 0 ? "#fff" : "#f7faf9" }}>
                     <td style={pTdc}>{i + 2}</td>
-                    <td style={pTdl}>{a.label}{iframeSelections[a.id] === "iframe" && a.iframeYearly && <span style={{ fontSize: 11, color: "#9ca3af", marginLeft: 6 }}>(with iframe)</span>}</td>
+                    <td style={pTdl}>
+                      <div style={{ fontWeight: 500, color: "#374151" }}>
+                        {a.label}
+                        {iframeSelections[a.id] === "iframe" && a.iframeYearly && <span style={{ fontSize: 11, color: "#9ca3af", marginLeft: 6 }}>(with iframe)</span>}
+                      </div>
+                      {(() => {
+                        const unit = getAddonUnitPrice(a, plan, billing);
+                        const qty = getQty(a.id);
+                        if (a.custom) return <div style={{ fontSize: 10.5, color: "#9ca3af", marginTop: 2 }}>{a.custom}</div>;
+                        if (unit && a.perUnit) return <div style={{ fontSize: 10.5, color: "#9ca3af", marginTop: 2 }}>₹{fmtINR(unit)}/{a.unitLabel} × {qty} {a.unitLabel}{qty > 1 ? "s" : ""}</div>;
+                        if (unit) return <div style={{ fontSize: 10.5, color: "#9ca3af", marginTop: 2 }}>₹{fmtINR(unit)} {BILLING_LABELS[billing] || ""}</div>;
+                        return null;
+                      })()}
+                    </td>
                     <td style={pTdr}><strong>{getAddonPrintLabel(a)}</strong></td>
                 </tr>
                 ))}
@@ -1055,7 +1231,7 @@ export default function App() {
                   <tr key={a.id} style={{ background: (numericAddons.length + i) % 2 === 0 ? "#fff" : "#f7faf9" }}>
                     <td style={pTdc}>{numericAddons.length + i + 2}</td>
                     <td style={pTdl}>{a.label}</td>
-                    <td style={{ ...pTdr, color: "#1aad74", fontStyle: "italic" }}>{getAddonPrintLabel(a)}</td>
+                    <td style={{ ...pTdr, color: "#1aad74", fontStyle: "italic" }}>{a.custom || getAddonPrintLabel(a)}</td>
                   </tr>
                 ))}
                 {customAddonsList.map((ca, i) => (
@@ -1144,13 +1320,25 @@ export default function App() {
             <div style={{ width: 4, height: 24, background: "#0b5235", borderRadius: 2, flexShrink: 0 }} />
             <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 17, fontWeight: 700, color: "#0b5235", letterSpacing: 0.2 }}>Customer Success Manager (CSM) Programme</div>
           </div>
-          <div style={{ padding: "10px 16px", background: "#edfbf3", borderRadius: 8, border: "1px solid #a7f0c8", marginBottom: 12 }}>
-            <div style={{ fontWeight: 600, color: "#0b5235", fontSize: 12.5 }}>Dedicated Account Management &mdash; Active for the lifetime of your account</div>
-          </div>
-          <p style={{ color: "#374151", lineHeight: 1.8, marginBottom: 7, fontSize: 12.5 }}>Every account will have a dedicated Account Management Contact (AMC) for the full duration of the active subscription. Your AMC serves as your primary point of contact for account setup, onboarding, escalations, and ongoing platform implementation.</p>
-          <p style={{ color: "#374151", lineHeight: 1.8, marginBottom: 12, fontSize: 12.5 }}>Accounts with an MRR of ₹15,000 or above will additionally receive a dedicated WhatsApp support group, ensuring priority handling and faster resolution on all queries. You will also have full access to the DoubleTick Support Channel at any time.</p>
+          {plan === "enterprise" ? (
+            <>
+              <div style={{ padding: "10px 16px", background: "#edfbf3", borderRadius: 8, border: "1px solid #a7f0c8", marginBottom: 12 }}>
+                <div style={{ fontWeight: 600, color: "#0b5235", fontSize: 12.5 }}>Dedicated Account Management &mdash; Active for the lifetime of your account</div>
+              </div>
+              <p style={{ color: "#374151", lineHeight: 1.8, marginBottom: 7, fontSize: 12.5 }}>Enterprise accounts receive a dedicated Account Management Contact (AMC) for the full duration of the active subscription. Your AMC serves as your primary point of contact for account setup, onboarding, escalations, and ongoing platform implementation — with no time limit.</p>
+              <p style={{ color: "#374151", lineHeight: 1.8, marginBottom: 12, fontSize: 12.5 }}>Accounts with an MRR of ₹15,000 or above will additionally receive a dedicated WhatsApp support group, ensuring priority handling and faster resolution on all queries. You will also have full access to the DoubleTick Support Channel at any time.</p>
+            </>
+          ) : (
+            <>
+              <div style={{ padding: "10px 16px", background: "#edfbf3", borderRadius: 8, border: "1px solid #a7f0c8", marginBottom: 12 }}>
+                <div style={{ fontWeight: 600, color: "#0b5235", fontSize: 12.5 }}>60-Day Dedicated CSM Policy &mdash; Effective 3 October 2025</div>
+              </div>
+              <p style={{ color: "#374151", lineHeight: 1.8, marginBottom: 7, fontSize: 12.5 }}>Every account will have a dedicated Customer Success Manager assigned for 60 days from the date of activation. The CSM will serve as your primary point of contact, assisting with account setup, onboarding, and ensuring a smooth implementation of the platform.</p>
+              <p style={{ color: "#374151", lineHeight: 1.8, marginBottom: 12, fontSize: 12.5 }}>After the 60-day CSM period, you will receive a brief feedback form. You will continue to have full access to the DoubleTick Support Channel for ongoing assistance at any time.</p>
+            </>
+          )}
           <div style={{ breakInside: "avoid" }}>
-            <div style={{ fontWeight: 600, color: "#1f2937", marginBottom: 8, fontSize: 12.5 }}>Your 60-Day CSM Support Includes:</div>
+            <div style={{ fontWeight: 600, color: "#1f2937", marginBottom: 8, fontSize: 12.5 }}>{plan === "enterprise" ? "Your Dedicated AMC Support Includes:" : "Your 60-Day CSM Support Includes:"}</div>
             <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #e5e7eb", overflow: "hidden" }}>
               <tbody>
                 {[
@@ -1600,7 +1788,7 @@ export default function App() {
               <StepHead title="Add-on Features" sub={`Add-ons for DoubleTick ${planData.name} · ${effectiveBillingLabel} billing`} />
               <PanelCard>
                 {/* Group addons by group label */}
-                {["Platform Features", "Users & Numbers"].map(groupName => {
+                {["Platform Features", "Users & Numbers", "Integrations", "Platform Extras", "One-Time & Usage"].map(groupName => {
                   const groupItems = planAddons.filter(a => a.group === groupName);
                   if (groupItems.length === 0) return null;
                   return (
