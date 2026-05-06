@@ -959,7 +959,7 @@ export default function App() {
   const [billing, setBilling] = useState("quarterly");
   const [plan, setPlan] = useState("pro");
   const [addonQty, setAddonQty] = useState({}); // { addonId: quantity }
-  const [addonDiscount, setAddonDiscount] = useState(0); // 0-30%
+  const [addonDiscounts, setAddonDiscounts] = useState({}); // { addonId: 0-30 }
   const [enterpriseAIBots, setEnterpriseAIBots] = useState(false);
   const [enterpriseCustomPrice, setEnterpriseCustomPrice] = useState("");
   const [addons, setAddons] = useState([]);
@@ -1014,7 +1014,7 @@ export default function App() {
     const t = {
       id: Date.now(),
       name: templateName.trim(),
-      plan, billing, addons, iframeSelections, discount, addonDiscount,
+      plan, billing, addons, iframeSelections, discount, addonDiscounts,
       enterpriseCustomPrice, enterpriseAIBots,
       customAddonsList, customFeatures,
       createdAt: new Date().toLocaleDateString("en-IN"),
@@ -1032,7 +1032,7 @@ export default function App() {
     setAddons(Array.isArray(t.addons) ? t.addons : []);
     setIframeSelections(t.iframeSelections && typeof t.iframeSelections === "object" ? t.iframeSelections : {});
     setDiscount(typeof t.discount === "number" ? t.discount : 0);
-    setAddonDiscount(typeof t.addonDiscount === "number" ? t.addonDiscount : 0);
+    setAddonDiscounts(t.addonDiscounts && typeof t.addonDiscounts === "object" ? t.addonDiscounts : {});
     setEnterpriseCustomPrice(t.enterpriseCustomPrice ?? "");
     setEnterpriseAIBots(t.enterpriseAIBots === true);
     setCustomAddonsList(Array.isArray(t.customAddonsList) ? t.customAddonsList : []);
@@ -1130,10 +1130,18 @@ export default function App() {
 
   const numericAddons = selAddons.filter(a => getAddonLinePrice(a) != null);
   const customAddons = selAddons.filter(a => getAddonLinePrice(a) == null);
-  const addonDiscountFactor = 1 - addonDiscount / 100;
-  const addonSumOriginal = numericAddons.reduce((s, a) => s + getAddonLinePrice(a), 0)
+  // Per-addon discount helpers
+  const getAddonDiscount = (id) => addonDiscounts[id] || 0;
+  const getAddonDiscountedPrice = (a) => {
+    const raw = getAddonLinePrice(a);
+    if (raw == null) return null;
+    return Math.round(raw * (1 - getAddonDiscount(a.id) / 100));
+  };
+  const addonSumOriginal = numericAddons.reduce((s, a) => s + (getAddonLinePrice(a) ?? 0), 0)
     + customAddonsList.reduce((s, ca) => s + (parseInt(ca.price) || 0), 0);
-  const addonSum = Math.round(addonSumOriginal * addonDiscountFactor);
+  const addonSum = numericAddons.reduce((s, a) => s + (getAddonDiscountedPrice(a) ?? 0), 0)
+    + customAddonsList.reduce((s, ca) => s + (parseInt(ca.price) || 0), 0);
+  const totalAddonSaving = addonSumOriginal - addonSum;
   const total = planPrice + addonSum;
   const totalGST = Math.round(total * 1.18);
   const teamName = companyName || "Client";
@@ -1273,7 +1281,8 @@ export default function App() {
                   const isCustom = !!a.custom;
                   const rowBg = i % 2 === 0 ? "#fff" : "#f7faf9";
                   const linePrice = isCustom ? null : getAddonLinePrice(a);
-                  const discountedLine = linePrice != null ? Math.round(linePrice * addonDiscountFactor) : null;
+                  const disc = getAddonDiscount(a.id);
+                  const discountedLine = linePrice != null ? getAddonDiscountedPrice(a) : null;
                   return (
                     <tr key={a.id} style={{ background: rowBg }}>
                       <td style={pTdc}>{i + 2}</td>
@@ -1290,16 +1299,14 @@ export default function App() {
                         {a.perUnit && getQty(a.id) > 1 && (
                           <div style={{ fontSize: 10.5, color: "#9ca3af", marginTop: 2 }}>{getQty(a.id)} × {a.unitLabel} @ ₹{fmtINR(getAddonUnitPrice(a, plan, billing))}/{a.unitLabel}</div>
                         )}
-                        {addonDiscount > 0 && discountedLine != null && discountedLine !== linePrice && (
-                          <div style={{ fontSize: 10.5, color: "#16a34a", marginTop: 2, fontWeight: 600 }}>{addonDiscount}% discount applied</div>
-                        )}
+                        {disc > 0 && <div style={{ fontSize: 10.5, color: "#16a34a", marginTop: 2, fontWeight: 600 }}>{disc}% discount applied</div>}
                       </td>
                       <td style={pTdr}>
                         {isCustom ? (
                           <span style={{ color: "#1aad74", fontStyle: "italic", fontWeight: 600 }}>{a.custom}</span>
                         ) : (
                           <>
-                            {addonDiscount > 0 && linePrice != null && (
+                            {disc > 0 && linePrice != null && (
                               <div style={{ fontSize: 10.5, color: "#9ca3af", textDecoration: "line-through", textAlign: "right" }}>INR {fmtINR(linePrice)}/-</div>
                             )}
                             <strong>INR {fmtINR(discountedLine ?? linePrice)}/-</strong>
@@ -1322,11 +1329,11 @@ export default function App() {
                     </td>
                   </tr>
                 ))}
-                {addonDiscount > 0 && (
+                {totalAddonSaving > 0 && (
                   <tr style={{ background: "#f0fdf8" }}>
                     <td style={pTdc}>—</td>
-                    <td style={{ ...pTdl, color: "#16a34a", fontWeight: 600 }}>Add-on Discount ({addonDiscount}% applied)</td>
-                    <td style={{ ...pTdr, color: "#16a34a", fontWeight: 700 }}>−INR {fmtINR(addonSumOriginal - addonSum)}/-</td>
+                    <td style={{ ...pTdl, color: "#16a34a", fontWeight: 600 }}>Add-on Discounts (per line item)</td>
+                    <td style={{ ...pTdr, color: "#16a34a", fontWeight: 700 }}>−INR {fmtINR(totalAddonSaving)}/-</td>
                   </tr>
                 )}
                 <tr>
@@ -1915,6 +1922,44 @@ export default function App() {
                                   </div>
                                 </div>
                               )}
+                              {/* Per-addon discount row — shown when selected and has a numeric price */}
+                              {on && !a.custom && unitPrice != null && (() => {
+                                const d = getAddonDiscount(a.id);
+                                const presets = [0, 5, 10, 15, 20, 25, 30];
+                                const discountedAmt = getAddonDiscountedPrice(a);
+                                return (
+                                  <div style={{ borderTop: `1px solid ${T.border}`, padding: "10px 16px", background: d > 0 ? "rgba(23,160,102,0.03)" : "#0b1015", transition: "background 0.15s" }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "space-between" }}>
+                                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                        <span style={{ fontSize: 10.5, color: "#4a6070", fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase" }}>Discount</span>
+                                        <div style={{ display: "flex", gap: 4 }}>
+                                          {presets.map(v => (
+                                            <button key={v} onClick={() => setAddonDiscounts(p => ({ ...p, [a.id]: v }))}
+                                              style={{ padding: "3px 8px", borderRadius: 5, border: `1px solid ${d === v ? "#17a066" : "#1c2836"}`, background: d === v ? "rgba(23,160,102,0.2)" : "transparent", color: d === v ? "#21c47a" : "#3d5264", cursor: "pointer", fontSize: 11, fontWeight: 600, transition: "all 0.1s" }}>
+                                              {v === 0 ? "None" : `${v}%`}
+                                            </button>
+                                          ))}
+                                          {/* Custom input */}
+                                          <div style={{ display: "flex", alignItems: "center", border: `1px solid ${!presets.includes(d) && d > 0 ? "#17a066" : "#1c2836"}`, borderRadius: 5, padding: "2px 6px", background: !presets.includes(d) && d > 0 ? "rgba(23,160,102,0.12)" : "transparent" }}>
+                                            <input type="number" min={0} max={30} step={0.5}
+                                              value={presets.includes(d) ? "" : (d || "")}
+                                              onChange={e => { const v = parseFloat(e.target.value); if (e.target.value === "") { setAddonDiscounts(p => ({ ...p, [a.id]: 0 })); return; } if (!isNaN(v) && v >= 0 && v <= 30) setAddonDiscounts(p => ({ ...p, [a.id]: Math.round(v * 10) / 10 })); }}
+                                              placeholder="%" style={{ width: 30, background: "transparent", border: "none", outline: "none", color: "#21c47a", fontSize: 11, fontWeight: 700, fontFamily: "inherit" }} />
+                                            <span style={{ fontSize: 10, color: "#3d5264" }}>%</span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      {d > 0 && (
+                                        <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                                          <span style={{ fontSize: 11, color: "#3d5264", textDecoration: "line-through" }}>₹{fmtINR(lineTotal)}</span>
+                                          <span style={{ fontSize: 13, fontWeight: 700, color: "#21c47a" }}>₹{fmtINR(discountedAmt)}</span>
+                                          <span style={{ fontSize: 10, color: "#3d5264" }}>{BILLING_LABELS[billing]}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                             </div>
                           );
                         })}
@@ -1957,18 +2002,7 @@ export default function App() {
                   )}
                 </div>
 
-                {/* ── ADDON DISCOUNT ── */}
-                {(addons.length > 0 || customAddonsList.length > 0) && (
-                  <DiscountPanel
-                    label="Add-on Discount"
-                    sub="Applies to all numeric add-ons"
-                    value={addonDiscount}
-                    onChange={setAddonDiscount}
-                    previewOriginal={addonDiscount > 0 ? addonSumOriginal : null}
-                    previewFinal={addonDiscount > 0 ? addonSum : null}
-                    previewLabel="Add-ons total after discount"
-                  />
-                )}
+
 
                 {/* ── RUNNING TOTAL ── */}
                 {(addons.length > 0 || customAddonsList.length > 0) && (
@@ -1986,15 +2020,19 @@ export default function App() {
                       {/* Addon rows */}
                       {numericAddons.map(a => {
                         const raw = getAddonLinePrice(a);
-                        const discounted = Math.round(raw * addonDiscountFactor);
+                        const disc = getAddonDiscount(a.id);
+                        const discounted = getAddonDiscountedPrice(a);
                         return (
                           <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 7 }}>
-                            <span style={{ fontSize: 12.5, color: "#6d8497", flex: 1, paddingRight: 10 }}>
-                              {a.label}{a.perUnit && getQty(a.id) > 1 ? <span style={{ color: "#3d5264", fontSize: 11 }}> ×{getQty(a.id)}</span> : ""}
-                            </span>
+                            <div style={{ flex: 1, paddingRight: 10 }}>
+                              <span style={{ fontSize: 12.5, color: "#6d8497" }}>
+                                {a.label}{a.perUnit && getQty(a.id) > 1 ? <span style={{ color: "#3d5264", fontSize: 11 }}> ×{getQty(a.id)}</span> : ""}
+                              </span>
+                              {disc > 0 && <span style={{ marginLeft: 6, fontSize: 10.5, color: "#21c47a", fontWeight: 600, background: "rgba(23,160,102,0.12)", borderRadius: 4, padding: "1px 5px" }}>{disc}% off</span>}
+                            </div>
                             <div style={{ textAlign: "right", flexShrink: 0 }}>
-                              {addonDiscount > 0 && <div style={{ fontSize: 11, color: "#3d5264", textDecoration: "line-through" }}>₹{fmtINR(raw)}</div>}
-                              <span style={{ fontSize: 12.5, fontWeight: 600, color: addonDiscount > 0 ? "#21c47a" : "#e4eaf0" }}>₹{fmtINR(discounted)}</span>
+                              {disc > 0 && <div style={{ fontSize: 11, color: "#3d5264", textDecoration: "line-through" }}>₹{fmtINR(raw)}</div>}
+                              <span style={{ fontSize: 12.5, fontWeight: 600, color: disc > 0 ? "#21c47a" : "#e4eaf0" }}>₹{fmtINR(discounted)}</span>
                             </div>
                           </div>
                         );
@@ -2012,10 +2050,10 @@ export default function App() {
                         </div>
                       ))}
                       {/* Subtotals */}
-                      {addonDiscount > 0 && (
+                      {totalAddonSaving > 0 && (
                         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, padding: "8px 10px", background: "rgba(23,160,102,0.06)", borderRadius: 7 }}>
-                          <span style={{ fontSize: 12, color: "#21c47a" }}>Add-on discount ({addonDiscount}%)</span>
-                          <span style={{ fontSize: 12, color: "#21c47a", fontWeight: 600 }}>−₹{fmtINR(addonSumOriginal - addonSum)}</span>
+                          <span style={{ fontSize: 12, color: "#21c47a" }}>Total add-on savings</span>
+                          <span style={{ fontSize: 12, color: "#21c47a", fontWeight: 600 }}>−₹{fmtINR(totalAddonSaving)}</span>
                         </div>
                       )}
                       {/* Grand total */}
@@ -2131,7 +2169,7 @@ export default function App() {
                     <span style={{ fontSize: 11, color: T.textMuted, fontWeight: 600 }}>{qid}</span>
                   </div>
                   <div style={{ padding: "18px 20px" }}>
-                    {[["Client", clientName], ["Company", companyName], email && ["Email", email], ["Plan", `${planData.name} · ${effectiveBillingLabel}`], ["Plan Price", `₹${fmtINR(planPrice)} + 18% GST`], discount > 0 && ["Plan Discount", `${discount}% applied`], plan === "enterprise" && ["Enterprise Type", enterpriseAIBots ? "With AI Bots" : "Without AI Bots"], addons.length > 0 && ["Add-ons", `${addons.length} selected`], addonDiscount > 0 && ["Add-on Discount", `${addonDiscount}% applied`], expiryDate && ["Valid Until", new Date(expiryDate).toLocaleDateString("en-IN", {day:"numeric",month:"long",year:"numeric"})], includeROI && ["ROI Page", "Included"]].filter(Boolean).map(([l, v]) => (
+                    {[["Client", clientName], ["Company", companyName], email && ["Email", email], ["Plan", `${planData.name} · ${effectiveBillingLabel}`], ["Plan Price", `₹${fmtINR(planPrice)} + 18% GST`], discount > 0 && ["Plan Discount", `${discount}% applied`], plan === "enterprise" && ["Enterprise Type", enterpriseAIBots ? "With AI Bots" : "Without AI Bots"], addons.length > 0 && ["Add-ons", `${addons.length} selected`], totalAddonSaving > 0 && ["Add-on Savings", `−₹${fmtINR(totalAddonSaving)}`], expiryDate && ["Valid Until", new Date(expiryDate).toLocaleDateString("en-IN", {day:"numeric",month:"long",year:"numeric"})], includeROI && ["ROI Page", "Included"]].filter(Boolean).map(([l, v]) => (
                       <div key={l} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${T.border}` }}>
                         <span style={{ color: T.textMuted, fontSize: 13 }}>{l}</span>
                         <span style={{ color: T.text, fontSize: 13, fontWeight: 500 }}>{v}</span>
