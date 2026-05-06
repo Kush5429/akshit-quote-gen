@@ -42,6 +42,7 @@ function getEnterpriseMonthlyEquivalent(customPrice, billing) {
   const raw = parseInt(String(customPrice).replace(/[^0-9]/g, ""), 10) || 0;
   if (billing === "monthly") return raw;
   if (billing === "quarterly") return Math.round(raw / 3);
+  if (billing === "halfYearly") return Math.round(raw / 6);
   if (billing === "yearly") return Math.round(raw / 12);
   return raw;
 }
@@ -85,75 +86,164 @@ function getEnterpriseFeatures(customPrice, billing) {
 
 // ─── PLANS ────────────────────────────────────────────────────────────────────
 const PLANS = {
-  starter: {
-    name: "Starter",
+  standard: {
+    name: "Standard",
     subtitle: "Bulk Messaging + Google Sheets",
-    monthly: 5700, quarterly: 12900, yearly: 30000,
+    monthly: 3000, quarterly: 9000, halfYearly: 18000, yearly: 36000,
     monthlyNote: "Requires management approval",
     features: ["Team inbox (5 agents free)", "Send bulk broadcasts", "Bulk import", "Define customer segments", "Share products and catalogues", "Detailed broadcast analytics", "Excel export and import", "Google Sheets integration", "Access on mobile and web", "Unlimited tags", "10 custom attributes"],
   },
   pro: {
     name: "Pro",
     subtitle: "Bulk Messaging + Chatbots + Integrations",
-    monthly: 8700, quarterly: 18000, yearly: 42000,
+    monthly: 4200, quarterly: 12600, halfYearly: 25200, yearly: 50400,
     monthlyNote: "Requires management approval",
-    features: ["Everything in Starter plan", "Team inbox (10 agents free)", "Roles & permissions", "Number masking", "Automated ordering bot", "3rd party integrations", "Developer API", "Agent & Organisation Analytics", "Reports", "30 custom attributes", "5 WhatsApp Groups included"],
+    features: ["Everything in Standard plan", "Team inbox (10 agents free)", "Roles & permissions", "Number masking", "Automated ordering bot", "3rd party integrations", "Developer API", "Agent & Organisation Analytics", "Reports", "30 custom attributes", "5 WhatsApp Groups included"],
   },
   enterprise: {
     name: "Enterprise",
-    subtitle: "Full Suite — Quarterly Only",
-    monthly: null, quarterly: 30000, yearly: 120000,
+    subtitle: "Full Suite — Custom Pricing",
+    monthly: null, quarterly: null, halfYearly: null, yearly: null,
     features: [],
   },
 };
 
-const ADDON_GROUPS = [
+// Plan-specific add-on catalog
+// Each item: { id, label, desc, plans: ["pro","enterprise","standard"], monthly, quarterly, halfYearly, yearly, perUnit, unitLabel, unavailableIn: [] }
+const ADDON_CATALOG = [
+  // ── PLATFORM FEATURES ──────────────────────────────────────────────────────
   {
+    id: "capi_support",
     group: "Platform Features",
-    items: [
-      { id: "whatsapp_calling", label: "WhatsApp API Calling", note: "Calling usage cost charged separately", monthly: 3000, quarterly: 9000, yearly: 36000, displayPrice: { monthly: "₹3,000/mo", quarterly: "₹9,000/qtr", yearly: "₹36,000/yr" } },
-      { id: "ai_filtered", label: "AI Filtered Awaiting Reply", monthly: 5000, quarterly: 15000, yearly: 60000, displayPrice: { monthly: "₹5,000/mo", quarterly: "₹15,000/qtr", yearly: "₹60,000/yr" } },
-      { id: "collaborators", label: "Collaborators", monthly: 7000, quarterly: 21000, yearly: 84000, displayPrice: { monthly: "₹7,000/mo", quarterly: "₹21,000/qtr", yearly: "₹84,000/yr" } },
-      { id: "ai_chatbots", label: "AI Chat Bots (ChatGPT-Based)", note: "Requires active ChatGPT Plus subscription", monthly: 15000, quarterly: 45000, yearly: 180000, displayPrice: { monthly: "₹15,000/mo", quarterly: "₹45,000/qtr", yearly: "₹1,80,000/yr" } },
-      { id: "key_account", label: "Key Account Manager", monthly: 10000, quarterly: 30000, yearly: 120000, displayPrice: { monthly: "₹10,000/mo", quarterly: "₹30,000/qtr", yearly: "₹1,20,000/yr" } },
-      { id: "managerial", label: "Managerial Services (Complete Account Management)", monthly: 35000, quarterly: 105000, yearly: 420000, displayPrice: { monthly: "₹35,000/mo", quarterly: "₹1,05,000/qtr", yearly: "₹4,20,000/yr" } },
-      { id: "sla_timer", label: "SLA Chat-Based Timer", monthly: 2500, quarterly: 7500, yearly: 30000, displayPrice: { monthly: "₹2,500/mo", quarterly: "₹7,500/qtr", yearly: "₹30,000/yr" } },
-      { id: "frictionless", label: "Frictionless Messaging (Utility-Based)", monthly: null, quarterly: null, yearly: 30000, displayPrice: { monthly: "₹30,000/yr only", quarterly: "₹30,000/yr only", yearly: "₹30,000/yr" } },
-    ],
+    label: "CAPI Support",
+    desc: "Assistance in setting up Meta Conversion API for tracking and attribution.",
+    plans: ["pro"],
+    monthly: 1800, quarterly: 5400, halfYearly: null, yearly: 21600,
+    perUnit: false,
   },
   {
+    id: "frictionless",
+    group: "Platform Features",
+    label: "Frictionless Messaging",
+    desc: "Send messages beyond WhatsApp's 24-hour window using approved templates.",
+    plans: ["pro"],
+    monthly: 3600, quarterly: 10800, halfYearly: null, yearly: 36000,
+    perUnit: false,
+  },
+  {
+    id: "sla",
+    group: "Platform Features",
+    label: "SLA",
+    desc: "Track response and resolution time to ensure timely support.",
+    plans: ["pro"],
+    monthly: 1800, quarterly: 5400, halfYearly: null, yearly: 21600,
+    perUnit: false,
+  },
+  {
+    id: "whatsapp_flows",
+    group: "Platform Features",
+    label: "WhatsApp Flows",
+    desc: "Create native WhatsApp forms to capture structured customer data.",
+    plans: ["pro"],
+    monthly: 600, quarterly: 1800, halfYearly: null, yearly: 8496,
+    perUnit: false,
+  },
+  {
+    id: "instagram_dm",
+    group: "Platform Features",
+    label: "Instagram DM Integration",
+    desc: "Manage Instagram DMs alongside WhatsApp in a unified inbox. Supports media sharing and real-time replies.",
+    plans: ["pro", "enterprise", "standard"],
+    monthly: null, quarterly: null, halfYearly: null, yearly: null,
+    custom: "Custom Pricing",
+    perUnit: false,
+    isInstagram: true,
+  },
+  // ── USERS & NUMBERS ────────────────────────────────────────────────────────
+  {
+    id: "additional_channels",
     group: "Users & Numbers",
-    items: [
-      { id: "extra_agents", label: "Additional Agents", monthly: 500, quarterly: 1500, yearly: 6000, displayPrice: { monthly: "₹500/user/mo", quarterly: "₹1,500/user/qtr", yearly: "₹6,000/user/yr" } },
-      { id: "additional_waba", label: "Additional WABA (WhatsApp API Number)", monthly: 2400, quarterly: 7200, yearly: 28800, displayPrice: { monthly: "₹2,400/mo", quarterly: "₹7,200/qtr", yearly: "₹28,800/yr" } },
-    ],
+    label: "Additional Channels",
+    desc: "Add more WhatsApp numbers (WABAs) for multiple teams or use cases.",
+    plans: ["pro", "enterprise", "standard"],
+    // Pro: monthly 3000, quarterly 8400, yearly NOT available
+    // Enterprise: monthly 3000, quarterly 8400, halfYearly 16800, yearly 28800
+    monthly: 3000, quarterly: 8400, halfYearly: 16800, yearly: 28800,
+    unavailableIn: { pro: ["yearly"], standard: ["yearly"] },
+    perUnit: true, unitLabel: "WABA",
   },
   {
-    group: "Integrations",
-    items: [
-      { id: "zoho_crm", label: "Zoho CRM Integration", monthly: null, quarterly: 5000, yearly: 20000, iframeYearly: 25000, displayPrice: { monthly: "₹5,000/qtr or ₹20,000/yr", quarterly: "₹5,000/qtr", yearly: "₹20,000/yr" } },
-      { id: "hubspot", label: "HubSpot Integration", monthly: null, quarterly: 5000, yearly: 18000, displayPrice: { monthly: "₹5,000/qtr or ₹18,000/yr", quarterly: "₹5,000/qtr", yearly: "₹18,000/yr" } },
-      { id: "indiamart", label: "IndiaMart Integration", monthly: null, quarterly: 5000, yearly: 18000, displayPrice: { monthly: "₹5,000/qtr or ₹18,000/yr", quarterly: "₹5,000/qtr", yearly: "₹18,000/yr" } },
-      { id: "leadsquared", label: "LeadSquared Integration", monthly: null, quarterly: 5000, yearly: 18000, iframeYearly: 25000, displayPrice: { monthly: "₹5,000/qtr or ₹18,000/yr", quarterly: "₹5,000/qtr", yearly: "₹18,000/yr" } },
-      { id: "bitrix", label: "Bitrix Integration", monthly: null, quarterly: 5000, yearly: 18000, displayPrice: { monthly: "₹5,000/qtr or ₹18,000/yr", quarterly: "₹5,000/qtr", yearly: "₹18,000/yr" } },
-      { id: "salesforce", label: "Salesforce Integration", monthly: null, quarterly: 12500, yearly: 50000, iframeYearly: 90000, displayPrice: { monthly: "₹12,500/qtr or ₹50,000/yr", quarterly: "₹12,500/qtr", yearly: "₹50,000/yr" } },
-      { id: "shopify", label: "Shopify Integration", monthly: 0, quarterly: 0, yearly: 0, displayPrice: { monthly: "Free", quarterly: "Free", yearly: "Free" } },
-      { id: "woocommerce", label: "WooCommerce Integration", monthly: null, quarterly: null, yearly: 18000, displayPrice: { monthly: "₹18,000/yr only", quarterly: "₹18,000/yr only", yearly: "₹18,000/yr" } },
-    ],
+    id: "additional_seats",
+    group: "Users & Numbers",
+    label: "Additional User Seats",
+    desc: "Add more agents with access to inbox and automation.",
+    plans: ["pro", "enterprise", "standard"],
+    // Pro pricing (different from enterprise)
+    proMonthly: 720, proQuarterly: 2160, proHalfYearly: null, proYearly: 8640,
+    // Enterprise pricing
+    monthly: 960, quarterly: 3840, halfYearly: 7680, yearly: 11520,
+    perUnit: true, unitLabel: "agent",
   },
   {
-    group: "One-Time & Usage",
-    items: [
-      { id: "bot_building", label: "Bot Building (up to 15 components)", monthly: null, quarterly: null, yearly: null, custom: "₹20,000 one-time", displayPrice: { monthly: "₹20,000 one-time", quarterly: "₹20,000 one-time", yearly: "₹20,000 one-time" } },
-      { id: "bluetick", label: "BlueTick Verified Badge", monthly: null, quarterly: null, yearly: null, custom: "₹40,000 one-time", displayPrice: { monthly: "₹40,000 one-time", quarterly: "₹40,000 one-time", yearly: "₹40,000 one-time" } },
-      { id: "magic_text", label: "Magic Text Wand (AI Reply / Text Assist)", monthly: null, quarterly: null, yearly: null, custom: "₹1/daily active chat", displayPrice: { monthly: "₹1/daily active chat", quarterly: "₹1/daily active chat", yearly: "₹1/daily active chat" } },
-      { id: "ai_summary", label: "AI Summary", monthly: null, quarterly: null, yearly: null, custom: "₹2/daily summary", displayPrice: { monthly: "₹2/daily summary", quarterly: "₹2/daily summary", yearly: "₹2/daily summary" } },
-      { id: "whatsapp_groups", label: "WhatsApp Groups", note: "Pro & Enterprise plans include 5 groups free", monthly: null, quarterly: null, yearly: null, custom: "₹100/group/month", displayPrice: { monthly: "₹100/group/month", quarterly: "₹100/group/month", yearly: "₹100/group/month" } },
-    ],
+    id: "calling_license",
+    group: "Users & Numbers",
+    label: "Calling License",
+    desc: "Enable WhatsApp calling for agents. Usage charged separately.",
+    plans: ["pro", "enterprise", "standard"],
+    monthly: 600, quarterly: 1800, halfYearly: 3600, yearly: 7200,
+    perUnit: true, unitLabel: "license",
+  },
+  {
+    id: "whatsapp_groups",
+    group: "Users & Numbers",
+    label: "WhatsApp Groups",
+    desc: "Create and manage customer groups for engagement and updates.",
+    plans: ["pro", "enterprise", "standard"],
+    monthly: 60, quarterly: 180, halfYearly: 360, yearly: 720,
+    perUnit: true, unitLabel: "group",
   },
 ];
 
-const ADDONS = ADDON_GROUPS.flatMap(g => g.items);
+// Derive flat addon list for a given plan + billing
+function getAddonsForPlan(plan, billing) {
+  return ADDON_CATALOG.filter(a => a.plans.includes(plan)).filter(a => {
+    const unavail = a.unavailableIn?.[plan];
+    return !unavail || !unavail.includes(billing);
+  });
+}
+
+function getAddonUnitPrice(a, plan, billing) {
+  if (a.custom) return null;
+  // Seats have plan-specific pricing for pro
+  if (a.id === "additional_seats" && plan === "pro") {
+    if (billing === "monthly") return a.proMonthly ?? null;
+    if (billing === "quarterly") return a.proQuarterly ?? null;
+    if (billing === "halfYearly") return a.proHalfYearly ?? null;
+    if (billing === "yearly") return a.proYearly ?? null;
+    return null;
+  }
+  if (billing === "monthly") return a.monthly ?? null;
+  if (billing === "quarterly") return a.quarterly ?? null;
+  if (billing === "halfYearly") return a.halfYearly ?? null;
+  if (billing === "yearly") return a.yearly ?? null;
+  return null;
+}
+
+const BILLING_LABELS = {
+  monthly: "per month",
+  quarterly: "per 3 months",
+  halfYearly: "per 6 months",
+  yearly: "per year",
+};
+
+const BILLING_SHORT = {
+  monthly: "mo",
+  quarterly: "qtr",
+  halfYearly: "6mo",
+  yearly: "yr",
+};
+
+
 const fmtINR = n => new Intl.NumberFormat("en-IN").format(n);
 
 const T = {
@@ -647,6 +737,7 @@ export default function App() {
   const [clientLogo, setClientLogo] = useState(null);
   const [billing, setBilling] = useState("quarterly");
   const [plan, setPlan] = useState("pro");
+  const [addonQty, setAddonQty] = useState({}); // { addonId: quantity }
   const [enterpriseAIBots, setEnterpriseAIBots] = useState(false);
   const [enterpriseCustomPrice, setEnterpriseCustomPrice] = useState("");
   const [addons, setAddons] = useState([]);
@@ -679,8 +770,8 @@ export default function App() {
 
   const planData = PLANS[plan];
   const isEnterpriseCustom = plan === "enterprise";
-  const effectiveBilling = billing;
-  const effectiveBillingLabel = { monthly: "Monthly", quarterly: "Quarterly", yearly: "Yearly" }[billing];
+  // effectiveBilling = billing (same)
+  const effectiveBillingLabel = { monthly: "Monthly", quarterly: "Quarterly", halfYearly: "Half-Yearly", yearly: "Yearly" }[billing] ?? "Quarterly";
 
   // Auto-computed features (recalculate when price/billing changes)
   const autoFeatures = isEnterpriseCustom
@@ -714,7 +805,7 @@ export default function App() {
 
   const loadTemplate = (t) => {
     // Explicit checks to handle null/false/0/[] correctly
-    setPlan(t.plan ?? "pro");
+    setPlan(t.plan === "starter" ? "standard" : (t.plan ?? "pro"));
     setBilling(t.billing ?? "quarterly");
     setAddons(Array.isArray(t.addons) ? t.addons : []);
     setIframeSelections(t.iframeSelections && typeof t.iframeSelections === "object" ? t.iframeSelections : {});
@@ -772,50 +863,51 @@ export default function App() {
   };
 
   const basePlanPrice = isEnterpriseCustom
-    ? (parseInt(enterpriseCustomPrice.replace(/[^0-9]/g, ""), 10) || 0)
-    : (planData[billing] ?? planData.quarterly);
+    ? (parseInt(String(enterpriseCustomPrice).replace(/[^0-9]/g, ""), 10) || 0)
+    : (planData[billing] ?? planData.quarterly ?? 0);
 
   const aiBotsAddon = plan === "enterprise" && enterpriseAIBots
-    ? (billing === "quarterly" ? 45000 : billing === "yearly" ? 180000 : 15000)
+    ? ({ monthly: 15000, quarterly: 45000, halfYearly: 90000, yearly: 180000 }[billing] ?? 15000)
     : 0;
   const planPriceOriginal = basePlanPrice + aiBotsAddon;
   const discountFactor = 1 - discount / 100;
   const planPrice = Math.round(planPriceOriginal * discountFactor);
 
-  const selAddons = ADDONS.filter(a => addons.includes(a.id));
+  // Active addons for current plan/billing
+  const planAddons = getAddonsForPlan(plan, billing);
+  const selAddons = planAddons.filter(a => addons.includes(a.id));
 
-  const getAddonPrice = (a) => {
-    const useIframe = iframeSelections[a.id] === "iframe" && a.iframeYearly != null;
-    if (useIframe) return a.iframeYearly;
-    if (a[effectiveBilling] != null) return a[effectiveBilling];
-    if (effectiveBilling === "monthly" && a.quarterly != null) return a.quarterly;
-    if (a.yearly != null) return a.yearly;
-    return null;
+  const getQty = (id) => addonQty[id] || 1;
+
+  const getAddonLinePrice = (a) => {
+    if (a.custom) return null;
+    const unit = getAddonUnitPrice(a, plan, billing);
+    if (unit == null) return null;
+    return unit * (a.perUnit ? getQty(a.id) : 1);
   };
 
-  const billingTag = { monthly: "monthly", quarterly: "quarterly", yearly: "yearly" }[effectiveBilling];
-
   const getAddonDisplayPrice = (a) => {
-    const useIframe = iframeSelections[a.id] === "iframe" && a.iframeYearly != null;
-    if (useIframe) return `₹${fmtINR(a.iframeYearly)}/yr (with iframe)`;
-    if (a.displayPrice) return a.displayPrice[effectiveBilling] ?? a.displayPrice.yearly ?? a.custom ?? "—";
-    const p = getAddonPrice(a);
-    return p != null ? `₹${fmtINR(p)} (${billingTag})` : (a.custom ?? "—");
+    if (a.custom) return a.custom;
+    const unit = getAddonUnitPrice(a, plan, billing);
+    if (unit == null) return "N/A for this billing cycle";
+    const label = BILLING_LABELS[billing] || billing;
+    return a.perUnit
+      ? `₹${fmtINR(unit)} / ${a.unitLabel} / ${label.replace("per ", "")}`
+      : `₹${fmtINR(unit)} ${label}`;
   };
 
   const getAddonPrintLabel = (a) => {
-    const useIframe = iframeSelections[a.id] === "iframe" && a.iframeYearly != null;
-    if (useIframe) return `INR ${fmtINR(a.iframeYearly)}/- (yearly · with iframe)`;
-    const p = getAddonPrice(a);
-    if (p === 0) return "Free";
-    if (p == null) return a.custom ?? "—";
-    if (a[effectiveBilling] == null && a.yearly != null && effectiveBilling !== "yearly") return `INR ${fmtINR(p)}/- (yearly)`;
-    return `INR ${fmtINR(p)}/- (${billingTag})`;
+    if (a.custom) return a.custom;
+    const line = getAddonLinePrice(a);
+    if (line == null) return "—";
+    const label = BILLING_LABELS[billing] || billing;
+    const qty = a.perUnit ? getQty(a.id) : 1;
+    return `INR ${fmtINR(line)}/- (${qty > 1 ? `${qty} × ` : ""}${label})`;
   };
 
-  const numericAddons = selAddons.filter(a => getAddonPrice(a) != null);
-  const customAddons = selAddons.filter(a => getAddonPrice(a) == null);
-  const addonSum = numericAddons.reduce((s, a) => s + getAddonPrice(a), 0)
+  const numericAddons = selAddons.filter(a => getAddonLinePrice(a) != null);
+  const customAddons = selAddons.filter(a => getAddonLinePrice(a) == null);
+  const addonSum = numericAddons.reduce((s, a) => s + getAddonLinePrice(a), 0)
     + customAddonsList.reduce((s, ca) => s + (parseInt(ca.price) || 0), 0);
   const total = planPrice + addonSum;
   const totalGST = Math.round(total * 1.18);
@@ -957,7 +1049,7 @@ export default function App() {
                     <td style={pTdc}>{i + 2}</td>
                     <td style={pTdl}>{a.label}{iframeSelections[a.id] === "iframe" && a.iframeYearly && <span style={{ fontSize: 11, color: "#9ca3af", marginLeft: 6 }}>(with iframe)</span>}</td>
                     <td style={pTdr}><strong>{getAddonPrintLabel(a)}</strong></td>
-                  </tr>
+                </tr>
                 ))}
                 {customAddons.map((a, i) => (
                   <tr key={a.id} style={{ background: (numericAddons.length + i) % 2 === 0 ? "#fff" : "#f7faf9" }}>
@@ -1053,10 +1145,10 @@ export default function App() {
             <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 17, fontWeight: 700, color: "#0b5235", letterSpacing: 0.2 }}>Customer Success Manager (CSM) Programme</div>
           </div>
           <div style={{ padding: "10px 16px", background: "#edfbf3", borderRadius: 8, border: "1px solid #a7f0c8", marginBottom: 12 }}>
-            <div style={{ fontWeight: 600, color: "#0b5235", fontSize: 12.5 }}>60-Day Dedicated CSM Policy &mdash; Effective 3 October 2025</div>
+            <div style={{ fontWeight: 600, color: "#0b5235", fontSize: 12.5 }}>Dedicated Account Management &mdash; Active for the lifetime of your account</div>
           </div>
-          <p style={{ color: "#374151", lineHeight: 1.8, marginBottom: 7, fontSize: 12.5 }}>Every account will have a dedicated Customer Success Manager assigned for 60 days from the date of activation. The CSM will serve as your primary point of contact, assisting with account setup, onboarding, and ensuring a smooth implementation of the platform.</p>
-          <p style={{ color: "#374151", lineHeight: 1.8, marginBottom: 12, fontSize: 12.5 }}>After the 60-day CSM period, you will receive a brief feedback form. You will continue to have full access to the DoubleTick Support Channel for ongoing assistance at any time.</p>
+          <p style={{ color: "#374151", lineHeight: 1.8, marginBottom: 7, fontSize: 12.5 }}>Every account will have a dedicated Account Management Contact (AMC) for the full duration of the active subscription. Your AMC serves as your primary point of contact for account setup, onboarding, escalations, and ongoing platform implementation.</p>
+          <p style={{ color: "#374151", lineHeight: 1.8, marginBottom: 12, fontSize: 12.5 }}>Accounts with an MRR of ₹15,000 or above will additionally receive a dedicated WhatsApp support group, ensuring priority handling and faster resolution on all queries. You will also have full access to the DoubleTick Support Channel at any time.</p>
           <div style={{ breakInside: "avoid" }}>
             <div style={{ fontWeight: 600, color: "#1f2937", marginBottom: 8, fontSize: 12.5 }}>Your 60-Day CSM Support Includes:</div>
             <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #e5e7eb", overflow: "hidden" }}>
@@ -1251,7 +1343,7 @@ export default function App() {
                     ) : (
                       <div>
                         {templates.map((t, i) => {
-                          const PLANS_MAP = { starter: "Starter", pro: "Pro", enterprise: "Enterprise" };
+                          const PLANS_MAP = { standard: "Standard", pro: "Pro", enterprise: "Enterprise" };
                           const addonCount = (t.addons || []).length + (t.customAddonsList || []).length;
                           return (
                             <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 16px", borderBottom: i < templates.length - 1 ? `1px solid ${T.border}` : "none", transition: "background 0.1s" }}
@@ -1327,8 +1419,13 @@ export default function App() {
               <PanelCard>
                 <FField label="Billing Cycle">
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginTop: 4 }}>
-                    {[["monthly", "Monthly", "Custom / Approval"], ["quarterly", "Quarterly", "Standard"], ["yearly", "Yearly", "Best Value"]].map(([b, label, badge]) => (
-                      <div key={b} onClick={() => setBilling(b)} style={{ padding: "13px 12px", borderRadius: 10, border: `1.5px solid ${billing === b ? T.green : T.border}`, background: billing === b ? "rgba(23,160,102,0.07)" : "#0d1520", cursor: "pointer", textAlign: "center", transition: "all 0.15s" }}>
+                    {[
+                      ["monthly", "Monthly", "Custom / Approval"],
+                      ["quarterly", "Quarterly", "Standard"],
+                      ...(plan === "enterprise" ? [["halfYearly", "Half-Yearly", "Enterprise Only"]] : []),
+                      ["yearly", "Yearly", "Best Value"],
+                    ].map(([b, label, badge]) => (
+                      <div key={b} onClick={() => { setBilling(b); setAddonQty({}); }} style={{ padding: "13px 12px", borderRadius: 10, border: `1.5px solid ${billing === b ? T.green : T.border}`, background: billing === b ? "rgba(23,160,102,0.07)" : "#0d1520", cursor: "pointer", textAlign: "center", transition: "all 0.15s" }}>
                         <div style={{ fontWeight: 600, fontSize: 14, color: billing === b ? T.greenLt : T.textSub }}>{label}</div>
                         <div style={{ fontSize: 10.5, color: billing === b ? T.greenLt : T.textMuted, marginTop: 3, fontWeight: 500 }}>{badge}</div>
                       </div>
@@ -1500,50 +1597,106 @@ export default function App() {
           {/* STEP 3 */}
           {step === 3 && (
             <>
-              <StepHead title="Add-on Features" sub="Select optional add-ons. Prices shown for your selected billing cycle." />
+              <StepHead title="Add-on Features" sub={`Add-ons for DoubleTick ${planData.name} · ${effectiveBillingLabel} billing`} />
               <PanelCard>
-                {ADDON_GROUPS.map(group => (
-                  <div key={group.group} style={{ marginBottom: 22 }}>
-                    <div style={{ fontSize: 10.5, color: T.textMuted, textTransform: "uppercase", letterSpacing: 1.8, fontWeight: 700, marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid ${T.border}` }}>{group.group}</div>
-                    <div style={{ display: "grid", gap: 7 }}>
-                      {group.items.map(a => {
-                        const on = addons.includes(a.id);
-                        const hasIframe = !!a.iframeYearly;
-                        const iframeSel = iframeSelections[a.id] || "standard";
-                        return (
-                          <div key={a.id} style={{ borderRadius: 9, border: `1.5px solid ${on ? T.green : T.border}`, background: on ? "rgba(23,160,102,0.05)" : "#0d1520", transition: "all 0.12s", overflow: "hidden" }}>
-                            <div onClick={() => toggleAddon(a.id)} style={{ padding: "10px 14px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-                              <div style={{ display: "flex", alignItems: "flex-start", gap: 10, flex: 1 }}>
-                                <div style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${on ? T.green : T.borderMed}`, background: on ? T.green : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#fff", fontSize: 10, fontWeight: 700, marginTop: 2 }}>{on && "✓"}</div>
-                                <div>
-                                  <div style={{ fontSize: 13, color: on ? T.text : T.textSub }}>{a.label}</div>
-                                  {a.note && <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>{a.note}</div>}
+                {/* Group addons by group label */}
+                {["Platform Features", "Users & Numbers"].map(groupName => {
+                  const groupItems = planAddons.filter(a => a.group === groupName);
+                  if (groupItems.length === 0) return null;
+                  return (
+                    <div key={groupName} style={{ marginBottom: 26 }}>
+                      {/* Group header */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                        <div style={{ fontSize: 10, color: T.textMuted, textTransform: "uppercase", letterSpacing: 2, fontWeight: 700 }}>{groupName}</div>
+                        <div style={{ flex: 1, height: 1, background: T.border }} />
+                      </div>
+                      <div style={{ display: "grid", gap: 8 }}>
+                        {groupItems.map(a => {
+                          const on = addons.includes(a.id);
+                          const qty = getQty(a.id);
+                          const unitPrice = getAddonUnitPrice(a, plan, billing);
+                          const lineTotal = getAddonLinePrice(a);
+                          return (
+                            <div key={a.id} style={{ borderRadius: 11, border: `1.5px solid ${on ? T.green : T.border}`, background: on ? "rgba(23,160,102,0.04)" : T.surface, transition: "all 0.15s", overflow: "hidden" }}>
+                              {/* Main row */}
+                              <div style={{ padding: "13px 16px", display: "flex", alignItems: "flex-start", gap: 13 }}>
+                                {/* Checkbox */}
+                                <div
+                                  onClick={() => toggleAddon(a.id)}
+                                  style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${on ? T.green : T.borderMed}`, background: on ? T.green : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer", marginTop: 2, transition: "all 0.15s" }}
+                                >
+                                  {on && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                                </div>
+                                {/* Label + desc */}
+                                <div style={{ flex: 1, cursor: "pointer" }} onClick={() => toggleAddon(a.id)}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                                    <span style={{ fontSize: 13.5, fontWeight: 600, color: on ? T.text : T.textSub }}>{a.label}</span>
+                                    {a.isInstagram && <span style={{ fontSize: 10, background: "rgba(131,58,180,0.15)", color: "#c084fc", border: "1px solid rgba(192,132,252,0.3)", borderRadius: 10, padding: "1px 7px", fontWeight: 600 }}>New</span>}
+                                  </div>
+                                  {a.desc && <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.55 }}>{a.desc}</div>}
+                                </div>
+                                {/* Price + qty */}
+                                <div style={{ flexShrink: 0, textAlign: "right" }}>
+                                  {a.custom ? (
+                                    <div style={{ fontSize: 12.5, fontWeight: 700, color: "#c084fc" }}>{a.custom}</div>
+                                  ) : unitPrice != null ? (
+                                    <>
+                                      <div style={{ fontSize: 13, fontWeight: 700, color: on ? T.greenLt : T.textSub }}>
+                                        ₹{fmtINR(unitPrice)}
+                                        {a.perUnit && <span style={{ fontSize: 10.5, fontWeight: 400, color: T.textMuted }}>/{a.unitLabel}</span>}
+                                      </div>
+                                      <div style={{ fontSize: 10.5, color: T.textMuted }}>{BILLING_LABELS[billing]}</div>
+                                    </>
+                                  ) : (
+                                    <div style={{ fontSize: 11, color: "#f59e0b", fontWeight: 600 }}>Not available</div>
+                                  )}
                                 </div>
                               </div>
-                              <div style={{ fontSize: 12, color: T.greenLt, fontWeight: 600, whiteSpace: "nowrap", textAlign: "right", flexShrink: 0 }}>{getAddonDisplayPrice(a)}</div>
+                              {/* Quantity + line total row — only when selected and perUnit */}
+                              {on && a.perUnit && unitPrice != null && (
+                                <div style={{ borderTop: `1px solid ${T.border}`, padding: "9px 16px 10px", background: "rgba(23,160,102,0.03)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                    <span style={{ fontSize: 11.5, color: T.textMuted, marginRight: 8 }}>Quantity:</span>
+                                    <button
+                                      onClick={() => setAddonQty(q => ({ ...q, [a.id]: Math.max(1, (q[a.id] || 1) - 1) }))}
+                                      style={{ width: 26, height: 26, borderRadius: 6, border: `1px solid ${T.borderMed}`, background: "#0d1520", color: T.text, cursor: "pointer", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}
+                                    >−</button>
+                                    <span style={{ fontSize: 13, fontWeight: 700, color: T.text, minWidth: 28, textAlign: "center" }}>{qty}</span>
+                                    <button
+                                      onClick={() => setAddonQty(q => ({ ...q, [a.id]: (q[a.id] || 1) + 1 }))}
+                                      style={{ width: 26, height: 26, borderRadius: 6, border: `1px solid ${T.borderMed}`, background: "#0d1520", color: T.text, cursor: "pointer", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}
+                                    >+</button>
+                                    <span style={{ fontSize: 11, color: T.textMuted, marginLeft: 4 }}>{a.unitLabel}{qty > 1 ? "s" : ""}</span>
+                                  </div>
+                                  <div style={{ fontSize: 13, fontWeight: 700, color: T.greenLt }}>
+                                    ₹{fmtINR(lineTotal)} <span style={{ fontSize: 11, fontWeight: 400, color: T.textMuted }}>{BILLING_LABELS[billing]}</span>
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                            {on && hasIframe && (
-                              <div onClick={e => e.stopPropagation()} style={{ borderTop: `1px solid ${T.border}`, padding: "8px 14px 10px 40px", display: "flex", alignItems: "center", gap: 10, background: "rgba(23,160,102,0.03)" }}>
-                                <span style={{ fontSize: 11.5, color: T.textSub }}>Integration type:</span>
-                                <select value={iframeSel} onChange={e => setIframeSelections(p => ({ ...p, [a.id]: e.target.value }))} style={{ background: "#0d1520", border: `1px solid ${T.border}`, borderRadius: 6, color: T.text, fontSize: 12, padding: "4px 10px", cursor: "pointer", outline: "none" }}>
-                                  <option value="standard">Without iframe — {effectiveBilling === "yearly" ? `₹${fmtINR(a.yearly)}/yr` : `₹${fmtINR(a.quarterly)}/qtr`}</option>
-                                  <option value="iframe">With iframe — ₹{fmtINR(a.iframeYearly)}/yr</option>
-                                </select>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
+                  );
+                })}
+
+                {/* Custom Add-on */}
+                <div style={{ marginTop: 4, marginBottom: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                    <div style={{ fontSize: 10, color: T.textMuted, textTransform: "uppercase", letterSpacing: 2, fontWeight: 700 }}>Custom Add-on</div>
+                    <div style={{ flex: 1, height: 1, background: T.border }} />
                   </div>
-                ))}
-                <div style={{ marginTop: 8, marginBottom: 16 }}>
-                  <div style={{ fontSize: 10.5, color: T.textMuted, textTransform: "uppercase", letterSpacing: 1.8, fontWeight: 700, marginBottom: 10, paddingBottom: 6, borderBottom: `1px solid ${T.border}` }}>Custom Add-on</div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto auto", gap: 8, alignItems: "center" }}>
                     <input value={newCustomAddon.label} onChange={e => setNewCustomAddon(p => ({ ...p, label: e.target.value }))} placeholder="Add-on name / description" style={{ ...baseInput, fontSize: 13, padding: "9px 12px" }} />
-                    <input value={newCustomAddon.price} onChange={e => setNewCustomAddon(p => ({ ...p, price: e.target.value }))} placeholder="Price (e.g. 5000)" style={{ ...baseInput, fontSize: 13, padding: "9px 12px", width: 140 }} />
+                    <input value={newCustomAddon.price} onChange={e => setNewCustomAddon(p => ({ ...p, price: e.target.value }))} placeholder="Price" style={{ ...baseInput, fontSize: 13, padding: "9px 12px", width: 110 }} />
                     <select value={newCustomAddon.billing} onChange={e => setNewCustomAddon(p => ({ ...p, billing: e.target.value }))} style={{ ...baseInput, fontSize: 13, padding: "9px 12px", width: 130, cursor: "pointer" }}>
-                      <option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="yearly">Yearly</option><option value="one-time">One-Time</option><option value="custom">Custom</option>
+                      <option value="monthly">Monthly</option>
+                      <option value="quarterly">Quarterly</option>
+                      <option value="halfYearly">Half-Yearly</option>
+                      <option value="yearly">Yearly</option>
+                      <option value="one-time">One-Time</option>
+                      <option value="custom">Custom</option>
                     </select>
                     <button onClick={() => { if (!newCustomAddon.label.trim()) return; setCustomAddonsList(p => [...p, { ...newCustomAddon, id: `custom_${Date.now()}` }]); setNewCustomAddon({ label: "", price: "", billing: "custom" }); }} style={{ background: T.green, border: "none", borderRadius: 8, color: "#fff", fontWeight: 700, fontSize: 13, padding: "9px 16px", cursor: "pointer", whiteSpace: "nowrap" }}>+ Add</button>
                   </div>
@@ -1561,13 +1714,34 @@ export default function App() {
                     </div>
                   )}
                 </div>
+
+                {/* Running total */}
                 {(addons.length > 0 || customAddonsList.length > 0) && (
-                  <div style={{ marginTop: 18, padding: "16px 18px", background: T.surfaceHigh, borderRadius: 10, border: `1px solid ${T.border}` }}>
-                    <div style={{ fontSize: 10.5, color: T.textMuted, textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 600, marginBottom: 12 }}>Running Total</div>
-                    <div style={{ fontSize: 13, color: T.textSub, display: "flex", justifyContent: "space-between", marginBottom: 7 }}><span>{planData.name} Plan</span><span>₹{fmtINR(planPrice)}</span></div>
-                    {numericAddons.map(a => <div key={a.id} style={{ fontSize: 12.5, color: T.textMuted, display: "flex", justifyContent: "space-between", marginBottom: 5 }}><span>{a.label}</span><span>₹{fmtINR(getAddonPrice(a))}</span></div>)}
-                    {customAddonsList.map(ca => <div key={ca.id} style={{ fontSize: 12.5, color: T.textMuted, display: "flex", justifyContent: "space-between", marginBottom: 5 }}><span>{ca.label}</span><span>{ca.price ? `₹${Number(ca.price).toLocaleString("en-IN")} (${ca.billing})` : "Custom"}</span></div>)}
-                    <div style={{ borderTop: `1px solid ${T.border}`, marginTop: 10, paddingTop: 10, display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: 14.5, color: T.greenLt }}><span>Total incl. 18% GST</span><span>₹{fmtINR(totalGST)}</span></div>
+                  <div style={{ marginTop: 18, padding: "16px 18px", background: T.surfaceHigh, borderRadius: 11, border: `1px solid ${T.green}` }}>
+                    <div style={{ fontSize: 10, color: T.textMuted, textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 700, marginBottom: 12 }}>Running Total</div>
+                    <div style={{ fontSize: 13, color: T.textSub, display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                      <span>{planData.name} Plan</span><span style={{ fontWeight: 600 }}>₹{fmtINR(planPrice)}</span>
+                    </div>
+                    {numericAddons.map(a => (
+                      <div key={a.id} style={{ fontSize: 12.5, color: T.textMuted, display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                        <span>{a.label}{a.perUnit && getQty(a.id) > 1 ? ` ×${getQty(a.id)}` : ""}</span>
+                        <span>₹{fmtINR(getAddonLinePrice(a))}</span>
+                      </div>
+                    ))}
+                    {customAddons.map(a => (
+                      <div key={a.id} style={{ fontSize: 12.5, color: "#c084fc", display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                        <span>{a.label}</span><span>Custom</span>
+                      </div>
+                    ))}
+                    {customAddonsList.map(ca => (
+                      <div key={ca.id} style={{ fontSize: 12.5, color: T.textMuted, display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                        <span>{ca.label}</span>
+                        <span>{ca.price ? `₹${Number(ca.price).toLocaleString("en-IN")} (${ca.billing})` : "Custom"}</span>
+                      </div>
+                    ))}
+                    <div style={{ borderTop: `1px solid ${T.border}`, marginTop: 10, paddingTop: 10, display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: 15, color: T.greenLt }}>
+                      <span>Total incl. 18% GST</span><span>₹{fmtINR(totalGST)}</span>
+                    </div>
                   </div>
                 )}
                 <NavBtns prev={() => setStep(2)} next={() => setStep(4)} />
