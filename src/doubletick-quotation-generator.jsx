@@ -1496,16 +1496,7 @@ Output ONLY the 2 case studies in this format, no preamble.`;
                 ))}
 
                 {/* Savings row */}
-                {totalAddonSaving > 0 && (
-                  <tr style={{ background: "#f0fdf4" }}>
-                    <td style={{ ...pTdc, padding: "10px 16px" }}>—</td>
-                    <td style={{ ...pTdl, padding: "10px 18px", color: "#16a34a", fontWeight: 600, fontSize: 12 }}>
-                      Add-on Discounts Applied
-                      <div style={{ fontSize: 10.5, color: "#9ca3af", fontWeight: 400 }}>Per line item</div>
-                    </td>
-                    <td style={{ ...pTdr, padding: "10px 18px", color: "#16a34a", fontWeight: 700 }}>−INR {fmtINR(totalAddonSaving)}/-</td>
-                  </tr>
-                )}
+
 
                 {/* Total row */}
                 <tr style={{ background: theme.subHeaderBg }}>
@@ -1548,7 +1539,7 @@ Output ONLY the 2 case studies in this format, no preamble.`;
             <div style={{ display: "grid", gap: 8 }}>
               {[
                 ["Cold Messaging", "Meta strictly prohibits cold messaging via WhatsApp Business API. All outbound communications must comply with Meta's messaging policies."],
-                ["WhatsApp Groups", "Groups created via WhatsApp APIs support a maximum of 8 participants. Adding more than 8 members requires the Collaborators add-on. A minimum messaging tier of 100,000 messages is required by Meta to operate group-based communication at scale. Pro & Enterprise plans include 5 WhatsApp groups by default."],
+                ["WhatsApp Groups", "Groups created via WhatsApp APIs support a maximum of 8 participants. Adding more than 8 members requires the Collaborators add-on. BlueTick on the WhatsApp API enabled number is required by Meta to operate group-based communication at scale. Pro & Enterprise plans include 5 WhatsApp groups by default."],
                 ["Platform Operations", "All agents will be required to use the DoubleTick App (Web or Mobile) for day-to-day operations."],
               ].map(([k, v]) => (
                 <div key={k} style={{ display: "flex", gap: 10, color: "#7c2d12", lineHeight: 1.7 }}>
@@ -2692,3 +2683,4 @@ function NavBtns({ prev, next, nextDisabled }) {
 const pTdc = { padding: "10px 14px", textAlign: "center", fontSize: 12.5, borderBottom: "1px solid #e5e7eb", color: "#9ca3af", width: 44 };
 const pTdl = { padding: "10px 16px", textAlign: "left", fontSize: 12.5, borderBottom: "1px solid #e5e7eb", color: "#374151" };
 const pTdr = { padding: "10px 16px", textAlign: "right", fontSize: 12.5, borderBottom: "1px solid #e5e7eb", color: "#111827" };
+
