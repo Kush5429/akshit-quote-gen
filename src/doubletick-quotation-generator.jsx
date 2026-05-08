@@ -1065,7 +1065,6 @@ export default function App() {
   const [showTemplates, setShowTemplates] = useState(false);
   const [loadedTemplateName, setLoadedTemplateName] = useState(""); // for toast
   // Floating preview
-  const [showPreviewDrawer, setShowPreviewDrawer] = useState(false);
   // Company auto-fill
   const [autoFillLoading, setAutoFillLoading] = useState(false);
   const [autoFillDone, setAutoFillDone] = useState(false);
@@ -1950,13 +1949,7 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.3"/><path d="M4 4.5h6M4 7h6M4 9.5h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
             History
           </button>
-          {/* Floating preview */}
-          {!preview && (
-            <button onClick={() => setShowPreviewDrawer(p => !p)} style={{ padding: "6px 12px", background: showPreviewDrawer ? "rgba(23,160,102,0.12)" : "transparent", border: `1px solid ${showPreviewDrawer ? T.green : T.borderMed}`, borderRadius: 7, color: T.textSub, cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", gap: 6, fontWeight: 500 }}>
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7s2.5-4.5 6-4.5S13 7 13 7s-2.5 4.5-6 4.5S1 7 1 7z" stroke="currentColor" strokeWidth="1.3"/><circle cx="7" cy="7" r="1.8" stroke="currentColor" strokeWidth="1.3"/></svg>
-              Preview
-            </button>
-          )}
+
           {/* PDF Theme Toggle */}
           <div style={{ display: "flex", background: T.surfaceHigh, borderRadius: 8, border: `1px solid ${T.border}`, overflow: "hidden" }}>
             {[["green","Green"],["navy","Navy"]].map(([t, label]) => (
@@ -2079,20 +2072,7 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
         </div>
       )}
 
-      {/* ── FLOATING PREVIEW DRAWER ── */}
-      {showPreviewDrawer && !preview && (
-        <div style={{ position: "fixed", top: 60, right: 0, width: 400, height: "calc(100vh - 60px)", background: T.surface, borderLeft: `1px solid ${T.border}`, zIndex: 200, display: "flex", flexDirection: "column", boxShadow: "-4px 0 20px rgba(0,0,0,0.3)" }}>
-          <div style={{ padding: "12px 16px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>Live Preview</div>
-            <button onClick={() => setShowPreviewDrawer(false)} style={{ background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 18 }}>✕</button>
-          </div>
-          <div style={{ flex: 1, overflow: "auto", background: "#dde3e8", padding: 12 }}>
-            <div style={{ transform: "scale(0.45)", transformOrigin: "top left", width: "222%", pointerEvents: "none" }}>
-              <PrintDoc />
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* ── DASHBOARD PAGE ── */}
       {appPage === "dashboard" && (
@@ -2367,21 +2347,46 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
       )}
 
       {appPage === "builder" && !preview ? (
-        <div style={{ maxWidth: 720, margin: "0 auto", padding: "52px 24px 100px" }}>
-          <div style={{ display: "flex", marginBottom: 52 }}>
-            {STEPS.map((s, i) => (
-              <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                <div style={{ display: "flex", alignItems: "center", width: "100%" }}>
-                  {i > 0 && <div style={{ flex: 1, height: 1, background: step > i ? T.green : T.border, transition: "background 0.3s" }} />}
-                  <div style={{ width: 30, height: 30, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, transition: "all 0.25s", background: step === i + 1 ? T.green : step > i + 1 ? T.greenDk : T.surface, border: `2px solid ${step >= i + 1 ? T.green : T.border}`, color: step >= i + 1 ? "#fff" : T.textMuted, cursor: step > i + 1 ? "pointer" : "default" }} onClick={() => step > i + 1 && setStep(i + 1)}>
-                    {step > i + 1 ? "✓" : i + 1}
-                  </div>
-                  {i < STEPS.length - 1 && <div style={{ flex: 1, height: 1, background: step > i + 1 ? T.green : T.border, transition: "background 0.3s" }} />}
-                </div>
-                <div style={{ fontSize: 11, marginTop: 8, color: step === i + 1 ? T.greenLt : T.textMuted, fontWeight: step === i + 1 ? 600 : 400, letterSpacing: 0.2 }}>{s}</div>
+        <div style={{ display: "flex", minHeight: "calc(100vh - 60px)" }}>
+          {/* ── LEFT: Form panel ── */}
+          <div style={{ flex: 1, minWidth: 0, overflowY: "auto" }}>
+            {/* Pill steps sub-header (Concept B style) */}
+            <div style={{ borderBottom: `1px solid ${T.border}`, background: T.surface, padding: "0 32px", display: "flex", alignItems: "center", gap: 4 }}>
+              {/* Progress bar under steps */}
+              <div style={{ display: "flex", alignItems: "center", gap: 0, padding: "12px 0", flex: 1 }}>
+                {STEPS.map((s, i) => {
+                  const done = step > i + 1;
+                  const active = step === i + 1;
+                  return (
+                    <div key={i} style={{ display: "flex", alignItems: "center" }}>
+                      <div
+                        onClick={() => done && setStep(i + 1)}
+                        style={{ display: "flex", alignItems: "center", gap: 7, padding: "6px 14px", borderRadius: 20, background: active ? T.green : done ? "rgba(23,160,102,0.12)" : "transparent", border: `1.5px solid ${active ? T.green : done ? T.green : T.border}`, cursor: done ? "pointer" : "default", transition: "all 0.2s" }}
+                      >
+                        <div style={{ width: 18, height: 18, borderRadius: "50%", background: active ? "rgba(255,255,255,0.25)" : done ? T.green : T.surfaceHigh, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9.5, fontWeight: 700, color: active || done ? "#fff" : T.textMuted, flexShrink: 0 }}>
+                          {done ? "✓" : i + 1}
+                        </div>
+                        <span style={{ fontSize: 12, fontWeight: active ? 700 : done ? 600 : 400, color: active ? "#fff" : done ? T.greenLt : T.textMuted, whiteSpace: "nowrap" }}>{s}</span>
+                      </div>
+                      {i < STEPS.length - 1 && (
+                        <div style={{ width: 20, height: 1.5, background: done ? T.green : T.border, transition: "background 0.3s", flexShrink: 0 }} />
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            ))}
-          </div>
+              {/* Running total in step bar */}
+              {(planPrice > 0) && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, paddingLeft: 16, borderLeft: `1px solid ${T.border}`, marginLeft: 4 }}>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: 10, color: T.textMuted, letterSpacing: 0.5 }}>Total incl. GST</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: T.greenLt }}>₹{fmtINR(totalGST)}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+            {/* Step content */}
+            <div style={{ maxWidth: 680, margin: "0 auto", padding: "40px 28px 100px" }}>
 
           {/* STEP 1 */}
           {step === 1 && (
@@ -3075,6 +3080,51 @@ ${emailDraft.body}`)} style={{ marginLeft: "auto", fontSize: 11, color: T.greenL
               </PanelCard>
             </>
           )}
+            </div>
+          </div>
+
+          {/* ── RIGHT: Live PDF preview panel (Concept D) ── */}
+          <div style={{ width: 340, flexShrink: 0, borderLeft: `1px solid ${T.border}`, background: "#1a2535", display: "flex", flexDirection: "column", position: "sticky", top: 60, height: "calc(100vh - 60px)" }}>
+            {/* Panel header */}
+            <div style={{ padding: "12px 16px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", background: T.surface }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                <div style={{ width: 7, height: 7, borderRadius: "50%", background: T.greenLt }} />
+                <span style={{ fontSize: 11.5, fontWeight: 600, color: T.text }}>Live Preview</span>
+              </div>
+              <span style={{ fontSize: 10, color: T.textMuted }}>updates as you fill</span>
+            </div>
+            {/* Scrollable preview area */}
+            <div style={{ flex: 1, overflowY: "auto", padding: 12 }}>
+              {clientName || companyName ? (
+                <div style={{ transform: "scale(0.38)", transformOrigin: "top left", width: "263%", pointerEvents: "none" }}>
+                  <PrintDoc />
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", padding: "40px 20px", textAlign: "center" }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 12, background: T.surfaceHigh, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="2" width="16" height="18" rx="2" stroke="#3d5264" strokeWidth="1.5"/><path d="M7 7h8M7 11h8M7 15h5" stroke="#3d5264" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                  </div>
+                  <div style={{ fontSize: 13, color: T.textMuted, marginBottom: 5 }}>No preview yet</div>
+                  <div style={{ fontSize: 11.5, color: T.textMuted, lineHeight: 1.6 }}>Enter client name and company to see a live PDF preview here</div>
+                </div>
+              )}
+            </div>
+            {/* Bottom total strip */}
+            {planPrice > 0 && (
+              <div style={{ padding: "12px 16px", borderTop: `1px solid ${T.border}`, background: T.surface, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <div style={{ fontSize: 10, color: T.textMuted }}>Total incl. 18% GST</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: T.greenLt }}>₹{fmtINR(totalGST)}</div>
+                </div>
+                {step === 4 && (
+                  <button onClick={() => { saveToLog(); setPreview(true); }}
+                    style={{ padding: "8px 18px", background: `linear-gradient(135deg, ${T.green}, ${T.greenDk})`, border: "none", borderRadius: 8, color: "#fff", fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>
+                    Generate →
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       ) : appPage === "builder" ? (
         <div style={{ background: "#dde3e8", padding: "36px 20px 72px" }}>
