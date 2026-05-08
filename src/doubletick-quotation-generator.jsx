@@ -482,6 +482,29 @@ function updateQuoteStatus(qid, status, lostReason = "") {
   } catch {}
 }
 
+function deleteQuoteEntry(qid) {
+  try {
+    const log = loadQuoteLog();
+    localStorage.setItem(QUOTE_LOG_KEY, JSON.stringify(log.filter(q => q.qid !== qid)));
+  } catch {}
+}
+
+function updateQuoteField(qid, fields) {
+  try {
+    const log = loadQuoteLog();
+    const updated = log.map(q => q.qid === qid ? { ...q, ...fields } : q);
+    localStorage.setItem(QUOTE_LOG_KEY, JSON.stringify(updated));
+  } catch {}
+}
+
+const SETTINGS_KEY = "dt_rep_settings";
+function loadSettings() {
+  try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}"); } catch { return {}; }
+}
+function saveSettings(s) {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch {}
+}
+
 // ─── QUOTATION REFERENCE ID ────────────────────────────────────────────────────
 function generateQID() {
   const year = new Date().getFullYear();
@@ -1052,6 +1075,10 @@ export default function App() {
   const [appPage, setAppPage] = useState("builder"); // "builder" | "dashboard"
   const [logFilter, setLogFilter] = useState("all"); // "all" | "pending" | "won" | "lost"
   const [lostReasonInput, setLostReasonInput] = useState({});
+  const [confirmDelete, setConfirmDelete] = useState(null); // qid to confirm
+  const [repSettings, setRepSettings] = useState(loadSettings);
+  const [monthlyTarget, setMonthlyTarget] = useState(() => loadSettings().monthlyTarget || 0);
+  const [editingTarget, setEditingTarget] = useState(false);
   // Case study page
   const [includeCaseStudy, setIncludeCaseStudy] = useState(false);
   const [caseStudyText, setCaseStudyText] = useState("");
@@ -1173,6 +1200,31 @@ export default function App() {
     refreshLog();
   };
 
+  const handleDeleteQuote = (qid) => {
+    if (confirmDelete === qid) {
+      deleteQuoteEntry(qid);
+      refreshLog();
+      setConfirmDelete(null);
+    } else {
+      setConfirmDelete(qid);
+      // Auto-clear after 3s
+      setTimeout(() => setConfirmDelete(c => c === qid ? null : c), 3000);
+    }
+  };
+
+  const handleConfidenceChange = (qid, confidence) => {
+    updateQuoteField(qid, { confidence });
+    refreshLog();
+  };
+
+  const saveMonthlyTarget = (val) => {
+    const n = parseInt(val) || 0;
+    setMonthlyTarget(n);
+    const s = { ...loadSettings(), monthlyTarget: n };
+    saveSettings(s);
+    setEditingTarget(false);
+  };
+
   // WhatsApp share
   const handleWhatsAppShare = (q) => {
     const expiryStr = q.expiryDate
@@ -1232,25 +1284,50 @@ Thank you for considering DoubleTick! 🙏`;
   // Case study generation
   const handleGenerateCaseStudy = async () => {
     setCaseStudyLoading(true);
+    // Rotate through different client pairs on each call to force variety
+    const ALL_CLIENTS = [
+      ["GRT Jewellers", "Raheja Developers"],
+      ["Sabyasachi", "Tupperware"],
+      ["BVC Logistics", "Malabar Diamonds"],
+      ["ICRA", "Birla Brainiacs"],
+      ["GRT Jewellers", "BVC Logistics"],
+      ["Tupperware", "Raheja Developers"],
+      ["Malabar Diamonds", "Sabyasachi"],
+    ];
+    const pair = ALL_CLIENTS[Math.floor(Math.random() * ALL_CLIENTS.length)];
     try {
-      const prompt = `You are a B2B SaaS sales expert at DoubleTick (WhatsApp CRM). 
-Write 2 short client case studies relevant to: ${companyName} in their industry (infer from scope: ${scope || "general business"}).
+      const prompt = `You are a B2B SaaS sales expert at DoubleTick (WhatsApp CRM).
+Write 2 different client case studies for a proposal for ${companyName} (scope context: ${scope || "general business"}).
 
-Pick 2 from this real client list: GRT Jewellers, Raheja Developers, Sabyasachi, Tupperware, BVC Logistics, Malabar Diamonds, ICRA, Birla Brainiacs
+YOU MUST use EXACTLY these 2 clients — do not substitute: ${pair[0]} and ${pair[1]}.
 
-FORMAT (strict):
-[Client Name]:
-Industry: [industry]
-Challenge: [one sentence problem they had]
-Solution: [one sentence how DoubleTick helped]
-Result: [one sentence outcome with a number if possible]
+Write each case study fresh and specific to that client's actual industry. Do not reuse phrasing from previous outputs.
 
-Output ONLY the 2 case studies in this format, no preamble.`;
+STRICT OUTPUT FORMAT — follow exactly:
+${pair[0]}:
+Industry: [their actual industry]
+Challenge: [specific problem they had before DoubleTick — be specific, include a pain point]
+Solution: [exactly what DoubleTick feature or workflow solved it]
+Result: [specific measurable outcome — use a %, ₹ figure, or time metric]
+
+${pair[1]}:
+Industry: [their actual industry]
+Challenge: [specific problem they had before DoubleTick — be specific, include a pain point]
+Solution: [exactly what DoubleTick feature or workflow solved it]
+Result: [specific measurable outcome — use a %, ₹ figure, or time metric]
+
+Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each field on its own line. Blank line between the two case studies.`;
 
       const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${GROQ_API_KEY}` },
-        body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{ role: "user", content: prompt }], temperature: 0.5, max_tokens: 500 }),
+        body: JSON.stringify({
+          model: "llama-3.3-70b-versatile",
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.85,
+          max_tokens: 600,
+          top_p: 0.95,
+        }),
       });
       const data = await res.json();
       setCaseStudyText(data.choices?.[0]?.message?.content?.trim() ?? "");
@@ -1947,6 +2024,17 @@ Output ONLY the 2 case studies in this format, no preamble.`;
                       {status === "lost" && q.lostReason && (
                         <div style={{ fontSize: 11, color: "#f87171", marginBottom: 6, fontStyle: "italic" }}>"{q.lostReason}"</div>
                       )}
+                      {/* Confidence stars */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 7 }}>
+                        <span style={{ fontSize: 10, color: T.textMuted, marginRight: 3 }}>Confidence:</span>
+                        {[1,2,3,4,5].map(star => (
+                          <button key={star} onClick={() => handleConfidenceChange(q.qid, q.confidence === star ? 0 : star)}
+                            style={{ background: "none", border: "none", cursor: "pointer", padding: "0 1px", fontSize: 14, color: (q.confidence || 0) >= star ? "#f59e0b" : T.textMuted, lineHeight: 1 }}>
+                            {(q.confidence || 0) >= star ? "★" : "☆"}
+                          </button>
+                        ))}
+                        {q.confidence > 0 && <span style={{ fontSize: 10, color: "#f59e0b", marginLeft: 2 }}>{["","Low","Low","Medium","High","Very High"][q.confidence]}</span>}
+                      </div>
                       {/* Status buttons + actions */}
                       <div style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap" }}>
                         {["won", "pending", "lost"].map(s => (
@@ -1955,7 +2043,7 @@ Output ONLY the 2 case studies in this format, no preamble.`;
                             {s === "won" ? "✓ Won" : s === "lost" ? "✗ Lost" : "⏳ Pending"}
                           </button>
                         ))}
-                        <div style={{ marginLeft: "auto", display: "flex", gap: 5 }}>
+                        <div style={{ marginLeft: "auto", display: "flex", gap: 5, alignItems: "center" }}>
                           <button onClick={() => handleWhatsAppShare(q)} title="Share on WhatsApp"
                             style={{ padding: "3px 8px", background: "rgba(37,211,102,0.1)", border: "1px solid rgba(37,211,102,0.3)", borderRadius: 5, color: "#25d366", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>
                             WA
@@ -1963,6 +2051,11 @@ Output ONLY the 2 case studies in this format, no preamble.`;
                           <button onClick={() => loadFromLog(q)}
                             style={{ padding: "3px 10px", background: T.green, border: "none", borderRadius: 5, color: "#fff", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
                             Load
+                          </button>
+                          <button onClick={() => handleDeleteQuote(q.qid)}
+                            title={confirmDelete === q.qid ? "Click again to confirm" : "Delete quote"}
+                            style={{ padding: "3px 8px", background: confirmDelete === q.qid ? "rgba(239,68,68,0.2)" : "transparent", border: `1px solid ${confirmDelete === q.qid ? "#f87171" : T.border}`, borderRadius: 5, color: confirmDelete === q.qid ? "#f87171" : T.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer", transition: "all 0.15s" }}>
+                            {confirmDelete === q.qid ? "Confirm ✕" : "✕"}
                           </button>
                         </div>
                       </div>
@@ -2040,6 +2133,18 @@ Output ONLY the 2 case studies in this format, no preamble.`;
             }, {});
             // Most recent 8 deals for velocity timeline
             const recentDeals = [...all].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)).slice(0, 8);
+            // Confidence calibration
+            const ratedDeals = [...won, ...lost].filter(q => q.confidence > 0);
+            const confBuckets = {};
+            ratedDeals.forEach(q => {
+              const label = ["","⭐","⭐⭐","⭐⭐⭐","⭐⭐⭐⭐","⭐⭐⭐⭐⭐"][q.confidence];
+              if (!confBuckets[label]) confBuckets[label] = { won: 0, total: 0 };
+              confBuckets[label].total++;
+              if (q.status === "won") confBuckets[label].won++;
+            });
+            const avgConfidence = all.filter(q => q.confidence > 0).length > 0
+              ? (all.filter(q => q.confidence > 0).reduce((s, q) => s + q.confidence, 0) / all.filter(q => q.confidence > 0).length).toFixed(1)
+              : null;
 
             const KPI = ({ label, value, sub, color }) => (
               <div style={{ background: T.surface, borderRadius: 10, border: `1px solid ${T.border}`, padding: "16px 18px" }}>
@@ -2099,6 +2204,52 @@ Output ONLY the 2 case studies in this format, no preamble.`;
                       <KPI label="Pipeline Value" value={`₹${Math.round(pending.reduce((s, q) => s + (q.totalGST || 0), 0) / 1000)}k`} sub={`${pending.length} open quotes`} color={T.textSub} />
                     </div>
 
+
+                    {/* Monthly target */}
+                    {(() => {
+                      const wonThisMonth = won.filter(q => q.timestamp && (now - q.timestamp) < 30 * 86400000);
+                      const wonAmount = wonThisMonth.reduce((s, q) => s + (q.totalGST || 0), 0);
+                      const pct = monthlyTarget > 0 ? Math.min(100, Math.round(wonAmount / monthlyTarget * 100)) : 0;
+                      return (
+                        <div style={{ background: T.surface, borderRadius: 10, border: `1px solid ${T.border}`, padding: "16px 20px", marginBottom: 16 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                            <div style={{ fontSize: 11, color: T.textMuted, textTransform: "uppercase", letterSpacing: 1.2 }}>Monthly Revenue Target</div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              {editingTarget ? (
+                                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                                  <span style={{ fontSize: 12, color: T.textMuted }}>₹</span>
+                                  <input autoFocus type="number" defaultValue={monthlyTarget || ""}
+                                    placeholder="e.g. 500000"
+                                    onKeyDown={e => { if (e.key === "Enter") saveMonthlyTarget(e.target.value); if (e.key === "Escape") setEditingTarget(false); }}
+                                    onBlur={e => saveMonthlyTarget(e.target.value)}
+                                    style={{ ...baseInput, width: 120, fontSize: 12, padding: "5px 9px" }} />
+                                </div>
+                              ) : (
+                                <>
+                                  <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{monthlyTarget > 0 ? `₹${(monthlyTarget/100000).toFixed(1)}L target` : "No target set"}</span>
+                                  <button onClick={() => setEditingTarget(true)} style={{ fontSize: 11, color: T.greenLt, background: "none", border: `1px solid ${T.borderMed}`, borderRadius: 5, cursor: "pointer", padding: "3px 9px" }}>Edit</button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          {monthlyTarget > 0 ? (
+                            <>
+                              <div style={{ height: 10, borderRadius: 5, background: T.surfaceHigh, overflow: "hidden", marginBottom: 8 }}>
+                                <div style={{ height: "100%", width: `${pct}%`, background: pct >= 100 ? "#4ade80" : pct >= 60 ? T.green : "#f59e0b", borderRadius: 5, transition: "width 0.5s" }} />
+                              </div>
+                              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5 }}>
+                                <span style={{ color: pct >= 100 ? "#4ade80" : T.textSub, fontWeight: 600 }}>₹{(wonAmount/100000).toFixed(2)}L closed this month</span>
+                                <span style={{ color: pct >= 100 ? "#4ade80" : T.textMuted, fontWeight: 700 }}>{pct}% of ₹{(monthlyTarget/100000).toFixed(1)}L target</span>
+                              </div>
+                              {pct >= 100 && <div style={{ marginTop: 6, fontSize: 12, color: "#4ade80", fontWeight: 600 }}>🎯 Target hit this month!</div>}
+                            </>
+                          ) : (
+                            <div style={{ fontSize: 12, color: T.textMuted }}>Set a monthly target to track progress here.</div>
+                          )}
+                        </div>
+                      );
+                    })()}
+
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
                       {/* Plan performance */}
                       <div style={{ background: T.surface, borderRadius: 10, border: `1px solid ${T.border}`, padding: "18px 20px" }}>
@@ -2132,7 +2283,7 @@ Output ONLY the 2 case studies in this format, no preamble.`;
                       </div>
                     </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
                       {/* Loss reasons */}
                       <div style={{ background: T.surface, borderRadius: 10, border: `1px solid ${T.border}`, padding: "18px 20px" }}>
                         <div style={{ fontSize: 11, color: T.textMuted, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 14 }}>Why Deals Are Lost</div>
@@ -2153,6 +2304,35 @@ Output ONLY the 2 case studies in this format, no preamble.`;
                             </div>
                           ))
                         )}
+                      </div>
+
+                      {/* Confidence calibration */}
+                      <div style={{ background: T.surface, borderRadius: 10, border: `1px solid ${T.border}`, padding: "18px 20px" }}>
+                        <div style={{ fontSize: 11, color: T.textMuted, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 6 }}>Confidence Calibration</div>
+                        <div style={{ fontSize: 11.5, color: T.textMuted, marginBottom: 14 }}>
+                          {avgConfidence ? `Avg confidence: ${avgConfidence}/5 · ${ratedDeals.length} rated deals` : "Rate deals in history to see calibration"}
+                        </div>
+                        {Object.keys(confBuckets).length === 0 ? (
+                          <div style={{ fontSize: 12, color: T.textMuted }}>No rated deals yet. Star deals in quote history.</div>
+                        ) : Object.entries(confBuckets).sort((a,b) => a[0].length - b[0].length).map(([label, s]) => {
+                          const rate = s.total > 0 ? Math.round(s.won / s.total * 100) : 0;
+                          return (
+                            <div key={label} style={{ marginBottom: 12 }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                                <span style={{ fontSize: 12, color: "#f59e0b" }}>{label}</span>
+                                <span style={{ fontSize: 11, color: T.textMuted }}>{rate}% win · {s.total} deal{s.total !== 1 ? "s" : ""}</span>
+                              </div>
+                              <div style={{ height: 6, borderRadius: 3, background: T.surfaceHigh, overflow: "hidden" }}>
+                                <div style={{ width: `${rate}%`, height: "100%", background: rate >= 60 ? "#4ade80" : rate >= 40 ? "#f59e0b" : "#f87171" }} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {Object.keys(confBuckets).length > 1 && (() => {
+                          const sorted = Object.entries(confBuckets).sort((a,b) => a[0].length - b[0].length);
+                          const best = sorted.reduce((a, b) => (b[1].won/b[1].total) > (a[1].won/a[1].total) ? b : a);
+                          return <div style={{ marginTop: 10, fontSize: 11, color: T.textMuted, fontStyle: "italic" }}>Your {best[0]} deals win most often ({Math.round(best[1].won/best[1].total*100)}%)</div>;
+                        })()}
                       </div>
 
                       {/* Deal velocity timeline */}
