@@ -463,7 +463,21 @@ function loadQuoteLog() {
 function saveQuoteEntry(entry) {
   try {
     const log = loadQuoteLog();
-    const updated = [entry, ...log.filter(q => q.qid !== entry.qid)].slice(0, 50);
+    const existing = log.find(q => q.qid === entry.qid);
+    // Preserve status/closedAt/lostReason if already set
+    const merged = { status: "pending", closedAt: null, lostReason: "", ...existing, ...entry };
+    const updated = [merged, ...log.filter(q => q.qid !== entry.qid)].slice(0, 100);
+    localStorage.setItem(QUOTE_LOG_KEY, JSON.stringify(updated));
+  } catch {}
+}
+
+function updateQuoteStatus(qid, status, lostReason = "") {
+  try {
+    const log = loadQuoteLog();
+    const updated = log.map(q => q.qid === qid
+      ? { ...q, status, lostReason, closedAt: status !== "pending" ? Date.now() : null }
+      : q
+    );
     localStorage.setItem(QUOTE_LOG_KEY, JSON.stringify(updated));
   } catch {}
 }
@@ -1035,6 +1049,9 @@ export default function App() {
   // Quotation log
   const [quoteLog, setQuoteLog] = useState(loadQuoteLog);
   const [showQuoteLog, setShowQuoteLog] = useState(false);
+  const [appPage, setAppPage] = useState("builder"); // "builder" | "dashboard"
+  const [logFilter, setLogFilter] = useState("all"); // "all" | "pending" | "won" | "lost"
+  const [lostReasonInput, setLostReasonInput] = useState({});
   // Case study page
   const [includeCaseStudy, setIncludeCaseStudy] = useState(false);
   const [caseStudyText, setCaseStudyText] = useState("");
@@ -1145,6 +1162,36 @@ export default function App() {
       setAutoFillDone(true);
     } catch {}
     finally { setAutoFillLoading(false); }
+  };
+
+  // Refresh log from storage
+  const refreshLog = () => setQuoteLog(loadQuoteLog());
+
+  // Update status for a quote
+  const handleStatusChange = (qid, status, reason = "") => {
+    updateQuoteStatus(qid, status, reason);
+    refreshLog();
+  };
+
+  // WhatsApp share
+  const handleWhatsAppShare = (q) => {
+    const expiryStr = q.expiryDate
+      ? `
+Valid until: ${new Date(q.expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`
+      : "";
+    const msg = `Hi ${q.clientName},
+
+Please find your DoubleTick quotation below:
+
+📋 *Ref:* ${q.qid}
+🏢 *Client:* ${q.companyName}
+📦 *Plan:* DoubleTick ${q.plan} — ${q.billing}
+💰 *Total:* ₹${Number(q.totalGST || 0).toLocaleString("en-IN")} (incl. GST)${expiryStr}
+
+To proceed or for any queries, please reply to this message or contact us directly.
+
+Thank you for considering DoubleTick! 🙏`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
   // Save current quote to log
@@ -1816,10 +1863,15 @@ Output ONLY the 2 case studies in this format, no preamble.`;
           <div style={{ padding: "3px 10px", background: T.surfaceHigh, borderRadius: 20, border: `1px solid ${T.border}`, fontSize: 11, color: T.textSub, fontWeight: 600, letterSpacing: 0.5 }}>{qid}</div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {/* Quote Log */}
+          {/* Dashboard nav */}
+          <button onClick={() => setAppPage(p => p === "dashboard" ? "builder" : "dashboard")} style={{ padding: "6px 12px", background: appPage === "dashboard" ? "rgba(23,160,102,0.15)" : "transparent", border: `1px solid ${appPage === "dashboard" ? T.green : T.borderMed}`, borderRadius: 7, color: appPage === "dashboard" ? T.greenLt : T.textSub, cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", gap: 6, fontWeight: 500 }}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="8" width="3" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/><rect x="5.5" y="5" width="3" height="8" rx="1" stroke="currentColor" strokeWidth="1.3"/><rect x="10" y="1" width="3" height="12" rx="1" stroke="currentColor" strokeWidth="1.3"/></svg>
+            Dashboard {quoteLog.length > 0 && <span style={{ background: T.green, color: "#fff", borderRadius: 10, fontSize: 9.5, padding: "1px 5px", fontWeight: 700 }}>{quoteLog.length}</span>}
+          </button>
+          {/* Quote Log (history drawer) */}
           <button onClick={() => setShowQuoteLog(p => !p)} style={{ padding: "6px 12px", background: showQuoteLog ? "rgba(23,160,102,0.12)" : "transparent", border: `1px solid ${showQuoteLog ? T.green : T.borderMed}`, borderRadius: 7, color: T.textSub, cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", gap: 6, fontWeight: 500 }}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.3"/><path d="M4 4.5h6M4 7h6M4 9.5h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
-            History {quoteLog.length > 0 && <span style={{ background: T.green, color: "#fff", borderRadius: 10, fontSize: 9.5, padding: "1px 5px", fontWeight: 700 }}>{quoteLog.length}</span>}
+            History
           </button>
           {/* Floating preview */}
           {!preview && (
@@ -1847,31 +1899,90 @@ Output ONLY the 2 case studies in this format, no preamble.`;
       {showQuoteLog && (
         <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, padding: "16px 28px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>Quote History</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>Quote History</div>
+              {/* Filter tabs */}
+              <div style={{ display: "flex", background: T.surfaceHigh, borderRadius: 7, border: `1px solid ${T.border}`, overflow: "hidden" }}>
+                {[["all","All"], ["pending","Pending"], ["won","Won"], ["lost","Lost"]].map(([f, label]) => (
+                  <button key={f} onClick={() => setLogFilter(f)}
+                    style={{ padding: "4px 12px", background: logFilter === f ? (f === "won" ? "rgba(34,197,94,0.2)" : f === "lost" ? "rgba(239,68,68,0.15)" : T.green) : "transparent", border: "none", color: logFilter === f ? (f === "won" ? "#4ade80" : f === "lost" ? "#f87171" : "#fff") : T.textMuted, cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
+                    {label} <span style={{ opacity: 0.7 }}>({quoteLog.filter(q => f === "all" || q.status === f || (!q.status && f === "pending")).length})</span>
+                  </button>
+                ))}
+              </div>
+            </div>
             <button onClick={() => setShowQuoteLog(false)} style={{ background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 18 }}>✕</button>
           </div>
           {quoteLog.length === 0 ? (
             <div style={{ fontSize: 13, color: T.textMuted, padding: "12px 0" }}>No quotes saved yet. Generate a quotation and it will appear here.</div>
-          ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 8 }}>
-              {quoteLog.map(q => (
-                <div key={q.qid} style={{ padding: "11px 14px", background: T.surfaceHigh, borderRadius: 9, border: `1px solid ${T.border}` }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 5 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{q.clientName}</div>
-                    <span style={{ fontSize: 9.5, color: T.textMuted, background: "#0d1520", borderRadius: 4, padding: "1px 6px", border: `1px solid ${T.border}`, fontWeight: 500 }}>{q.qid}</span>
-                  </div>
-                  <div style={{ fontSize: 11.5, color: T.textMuted, marginBottom: 6 }}>{q.companyName} · {q.plan} · {q.billing}</div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: T.greenLt }}>₹{Number(q.totalGST || 0).toLocaleString("en-IN")}</span>
-                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                      <span style={{ fontSize: 10.5, color: T.textMuted }}>{q.date}</span>
-                      <button onClick={() => loadFromLog(q)} style={{ padding: "3px 10px", background: T.green, border: "none", borderRadius: 5, color: "#fff", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Load</button>
+          ) : (() => {
+            const filtered = quoteLog.filter(q => logFilter === "all" || q.status === logFilter || (!q.status && logFilter === "pending"));
+            return filtered.length === 0 ? (
+              <div style={{ fontSize: 13, color: T.textMuted, padding: "8px 0" }}>No {logFilter} quotes.</div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 8 }}>
+                {filtered.map(q => {
+                  const status = q.status || "pending";
+                  const statusColors = { won: { bg: "rgba(34,197,94,0.1)", border: "#4ade80", text: "#4ade80", label: "Won" }, lost: { bg: "rgba(239,68,68,0.08)", border: "#f87171", text: "#f87171", label: "Lost" }, pending: { bg: T.surfaceHigh, border: T.border, text: T.textMuted, label: "Pending" } };
+                  const sc = statusColors[status];
+                  const daysOpen = q.closedAt ? Math.round((q.closedAt - q.timestamp) / 86400000) : Math.round((Date.now() - (q.timestamp || Date.now())) / 86400000);
+                  return (
+                    <div key={q.qid} style={{ padding: "12px 14px", background: sc.bg, borderRadius: 10, border: `1px solid ${sc.border}`, transition: "all 0.15s" }}>
+                      {/* Header */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{q.clientName}</div>
+                          <div style={{ fontSize: 11, color: T.textMuted }}>{q.companyName}</div>
+                        </div>
+                        <span style={{ fontSize: 9, color: T.textMuted, background: "#0d1520", borderRadius: 4, padding: "2px 6px", border: `1px solid ${T.border}`, fontWeight: 500, letterSpacing: 0.3 }}>{q.qid}</span>
+                      </div>
+                      {/* Stats row */}
+                      <div style={{ display: "flex", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 11, color: T.textSub }}>{q.plan} · {q.billing}</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: T.greenLt }}>₹{Number(q.totalGST || 0).toLocaleString("en-IN")}</span>
+                        <span style={{ fontSize: 10.5, color: T.textMuted }}>{q.date}</span>
+                        {daysOpen > 0 && <span style={{ fontSize: 10.5, color: status === "won" ? "#4ade80" : status === "lost" ? "#f87171" : T.textMuted }}>{status === "pending" ? `${daysOpen}d open` : `closed in ${daysOpen}d`}</span>}
+                      </div>
+                      {/* Lost reason */}
+                      {status === "lost" && q.lostReason && (
+                        <div style={{ fontSize: 11, color: "#f87171", marginBottom: 6, fontStyle: "italic" }}>"{q.lostReason}"</div>
+                      )}
+                      {/* Status buttons + actions */}
+                      <div style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap" }}>
+                        {["won", "pending", "lost"].map(s => (
+                          <button key={s} onClick={() => handleStatusChange(q.qid, s)}
+                            style={{ padding: "3px 9px", borderRadius: 5, border: `1px solid ${s === "won" ? "#4ade80" : s === "lost" ? "#f87171" : T.borderMed}`, background: status === s ? (s === "won" ? "rgba(34,197,94,0.2)" : s === "lost" ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.05)") : "transparent", color: s === "won" ? "#4ade80" : s === "lost" ? "#f87171" : T.textMuted, fontSize: 10.5, fontWeight: 600, cursor: "pointer", textTransform: "capitalize" }}>
+                            {s === "won" ? "✓ Won" : s === "lost" ? "✗ Lost" : "⏳ Pending"}
+                          </button>
+                        ))}
+                        <div style={{ marginLeft: "auto", display: "flex", gap: 5 }}>
+                          <button onClick={() => handleWhatsAppShare(q)} title="Share on WhatsApp"
+                            style={{ padding: "3px 8px", background: "rgba(37,211,102,0.1)", border: "1px solid rgba(37,211,102,0.3)", borderRadius: 5, color: "#25d366", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>
+                            WA
+                          </button>
+                          <button onClick={() => loadFromLog(q)}
+                            style={{ padding: "3px 10px", background: T.green, border: "none", borderRadius: 5, color: "#fff", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                            Load
+                          </button>
+                        </div>
+                      </div>
+                      {/* Lost reason input */}
+                      {status === "lost" && (
+                        <div style={{ marginTop: 7, display: "flex", gap: 5 }}>
+                          <input value={lostReasonInput[q.qid] || q.lostReason || ""}
+                            onChange={e => setLostReasonInput(p => ({ ...p, [q.qid]: e.target.value }))}
+                            placeholder="Reason for loss (e.g. price, competitor, no budget)"
+                            style={{ ...baseInput, fontSize: 11, padding: "5px 9px" }}
+                            onBlur={e => { if (e.target.value !== q.lostReason) handleStatusChange(q.qid, "lost", e.target.value); }}
+                          />
+                        </div>
+                      )}
                     </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -1890,7 +2001,192 @@ Output ONLY the 2 case studies in this format, no preamble.`;
         </div>
       )}
 
-      {!preview ? (
+      {/* ── DASHBOARD PAGE ── */}
+      {appPage === "dashboard" && (
+        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "36px 28px 80px" }}>
+          {(() => {
+            const all = quoteLog;
+            const won = all.filter(q => q.status === "won");
+            const lost = all.filter(q => q.status === "lost");
+            const pending = all.filter(q => !q.status || q.status === "pending");
+            const now = Date.now();
+            const thisMonth = all.filter(q => q.timestamp && (now - q.timestamp) < 30 * 86400000);
+            const avgDeal = won.length > 0 ? Math.round(won.reduce((s, q) => s + (q.totalGST || 0), 0) / won.length) : 0;
+            const winRate = (won.length + lost.length) > 0 ? Math.round(won.length / (won.length + lost.length) * 100) : 0;
+            const closedDeals = [...won, ...lost].filter(q => q.closedAt && q.timestamp);
+            const avgDays = closedDeals.length > 0 ? Math.round(closedDeals.reduce((s, q) => s + (q.closedAt - q.timestamp) / 86400000, 0) / closedDeals.length) : null;
+            // Plan performance
+            const planStats = {};
+            all.forEach(q => {
+              if (!planStats[q.plan]) planStats[q.plan] = { won: 0, lost: 0, pending: 0 };
+              planStats[q.plan][q.status || "pending"]++;
+            });
+            // Discount sensitivity
+            const discountBuckets = { "0%": { won: 0, lost: 0 }, "1-10%": { won: 0, lost: 0 }, "11-20%": { won: 0, lost: 0 }, "21-30%": { won: 0, lost: 0 } };
+            [...won, ...lost].forEach(q => {
+              const d = q.discount || 0;
+              const bucket = d === 0 ? "0%" : d <= 10 ? "1-10%" : d <= 20 ? "11-20%" : "21-30%";
+              discountBuckets[bucket][q.status]++;
+            });
+            // Loss reasons
+            const lossReasons = lost.filter(q => q.lostReason).reduce((acc, q) => {
+              const r = q.lostReason.toLowerCase();
+              const key = r.includes("price") || r.includes("expensive") || r.includes("cost") ? "Price / Budget"
+                : r.includes("competitor") || r.includes("wati") || r.includes("other") ? "Went with competitor"
+                : r.includes("time") || r.includes("later") || r.includes("defer") ? "Deferred / Not now"
+                : "Other";
+              acc[key] = (acc[key] || 0) + 1;
+              return acc;
+            }, {});
+            // Most recent 8 deals for velocity timeline
+            const recentDeals = [...all].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)).slice(0, 8);
+
+            const KPI = ({ label, value, sub, color }) => (
+              <div style={{ background: T.surface, borderRadius: 10, border: `1px solid ${T.border}`, padding: "16px 18px" }}>
+                <div style={{ fontSize: 11, color: T.textMuted, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 6 }}>{label}</div>
+                <div style={{ fontSize: 26, fontWeight: 800, color: color || T.greenLt, lineHeight: 1 }}>{value}</div>
+                {sub && <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 4 }}>{sub}</div>}
+              </div>
+            );
+
+            const BarRow = ({ label, won, lost, pending, total }) => {
+              const wPct = total > 0 ? (won / total * 100) : 0;
+              const lPct = total > 0 ? (lost / total * 100) : 0;
+              const pPct = total > 0 ? (pending / total * 100) : 0;
+              return (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                    <span style={{ fontSize: 12.5, color: T.text, fontWeight: 500 }}>{label}</span>
+                    <span style={{ fontSize: 11.5, color: T.textMuted }}>{total} quote{total !== 1 ? "s" : ""} · {won} won</span>
+                  </div>
+                  <div style={{ display: "flex", height: 8, borderRadius: 4, overflow: "hidden", background: T.surfaceHigh, gap: 1 }}>
+                    {wPct > 0 && <div style={{ width: `${wPct}%`, background: "#4ade80", transition: "width 0.4s" }} />}
+                    {lPct > 0 && <div style={{ width: `${lPct}%`, background: "#f87171" }} />}
+                    {pPct > 0 && <div style={{ width: `${pPct}%`, background: T.border }} />}
+                  </div>
+                  <div style={{ display: "flex", gap: 12, marginTop: 3 }}>
+                    <span style={{ fontSize: 10, color: "#4ade80" }}>✓ {won} won</span>
+                    <span style={{ fontSize: 10, color: "#f87171" }}>✗ {lost} lost</span>
+                    <span style={{ fontSize: 10, color: T.textMuted }}>⏳ {pending} pending</span>
+                  </div>
+                </div>
+              );
+            };
+
+            return (
+              <>
+                {/* Header */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
+                  <div>
+                    <h2 style={{ fontFamily: "'EB Garamond', serif", fontSize: 28, fontWeight: 600, color: T.text, marginBottom: 4 }}>Sales Dashboard</h2>
+                    <div style={{ fontSize: 13, color: T.textMuted }}>Based on {all.length} saved quote{all.length !== 1 ? "s" : ""} · localStorage only · no backend</div>
+                  </div>
+                  <button onClick={() => setAppPage("builder")} style={{ padding: "9px 20px", background: `linear-gradient(135deg, ${T.green}, ${T.greenDk})`, border: "none", borderRadius: 9, color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>+ New Quote</button>
+                </div>
+
+                {all.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "60px 20px", color: T.textMuted, fontSize: 14 }}>
+                    No quotes yet. Generate your first quotation to see analytics here.
+                  </div>
+                ) : (
+                  <>
+                    {/* KPI row */}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 28 }}>
+                      <KPI label="Total Quotes" value={all.length} sub={`${thisMonth.length} this month`} />
+                      <KPI label="Win Rate" value={`${winRate}%`} sub={`${won.length} won · ${lost.length} lost`} color={winRate >= 50 ? "#4ade80" : "#f59e0b"} />
+                      <KPI label="Avg Deal Size" value={avgDeal > 0 ? `₹${Math.round(avgDeal/1000)}k` : "—"} sub="incl. GST · won deals" />
+                      <KPI label="Avg Days to Close" value={avgDays != null ? `${avgDays}d` : "—"} sub={closedDeals.length > 0 ? `${closedDeals.length} closed deals` : "No closed deals yet"} color="#f59e0b" />
+                      <KPI label="Pipeline Value" value={`₹${Math.round(pending.reduce((s, q) => s + (q.totalGST || 0), 0) / 1000)}k`} sub={`${pending.length} open quotes`} color={T.textSub} />
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+                      {/* Plan performance */}
+                      <div style={{ background: T.surface, borderRadius: 10, border: `1px solid ${T.border}`, padding: "18px 20px" }}>
+                        <div style={{ fontSize: 11, color: T.textMuted, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 16 }}>Plan Performance</div>
+                        {Object.keys(planStats).length === 0 ? <div style={{ color: T.textMuted, fontSize: 12 }}>No data</div> : (
+                          Object.entries(planStats).map(([plan, s]) => (
+                            <BarRow key={plan} label={plan} won={s.won} lost={s.lost} pending={s.pending} total={s.won + s.lost + s.pending} />
+                          ))
+                        )}
+                      </div>
+
+                      {/* Discount sensitivity */}
+                      <div style={{ background: T.surface, borderRadius: 10, border: `1px solid ${T.border}`, padding: "18px 20px" }}>
+                        <div style={{ fontSize: 11, color: T.textMuted, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 16 }}>Discount Sensitivity</div>
+                        {Object.entries(discountBuckets).map(([bucket, s]) => {
+                          const total = s.won + s.lost;
+                          const rate = total > 0 ? Math.round(s.won / total * 100) : null;
+                          return (
+                            <div key={bucket} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                              <div style={{ width: 52, fontSize: 11.5, color: T.text, fontWeight: 600, flexShrink: 0 }}>{bucket}</div>
+                              <div style={{ flex: 1, height: 8, borderRadius: 4, background: T.surfaceHigh, overflow: "hidden" }}>
+                                {total > 0 && <div style={{ width: `${s.won / total * 100}%`, height: "100%", background: "#4ade80", transition: "width 0.4s" }} />}
+                              </div>
+                              <div style={{ fontSize: 11, color: T.textMuted, flexShrink: 0, minWidth: 70, textAlign: "right" }}>
+                                {total === 0 ? "no data" : `${rate}% win (${total} deals)`}
+                              </div>
+                            </div>
+                          );
+                        })}
+                        <div style={{ marginTop: 8, fontSize: 11, color: T.textMuted, fontStyle: "italic" }}>Based on {won.length + lost.length} closed deals</div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                      {/* Loss reasons */}
+                      <div style={{ background: T.surface, borderRadius: 10, border: `1px solid ${T.border}`, padding: "18px 20px" }}>
+                        <div style={{ fontSize: 11, color: T.textMuted, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 14 }}>Why Deals Are Lost</div>
+                        {lost.length === 0 ? (
+                          <div style={{ fontSize: 12, color: T.textMuted }}>No lost deals tagged yet.</div>
+                        ) : Object.keys(lossReasons).length === 0 ? (
+                          <div style={{ fontSize: 12, color: T.textMuted }}>Add loss reasons in quote history to see patterns.</div>
+                        ) : (
+                          Object.entries(lossReasons).sort((a, b) => b[1] - a[1]).map(([reason, count]) => (
+                            <div key={reason} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                              <span style={{ fontSize: 12.5, color: T.textSub }}>{reason}</span>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <div style={{ display: "flex", gap: 2 }}>
+                                  {Array.from({ length: count }).map((_, i) => <div key={i} style={{ width: 8, height: 8, borderRadius: 2, background: "#f87171" }} />)}
+                                </div>
+                                <span style={{ fontSize: 11, color: "#f87171", fontWeight: 600, minWidth: 16 }}>{count}</span>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+
+                      {/* Deal velocity timeline */}
+                      <div style={{ background: T.surface, borderRadius: 10, border: `1px solid ${T.border}`, padding: "18px 20px" }}>
+                        <div style={{ fontSize: 11, color: T.textMuted, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 14 }}>Recent Deals</div>
+                        {recentDeals.map(q => {
+                          const status = q.status || "pending";
+                          const daysOpen = q.closedAt ? Math.round((q.closedAt - q.timestamp) / 86400000) : Math.round((Date.now() - (q.timestamp || Date.now())) / 86400000);
+                          const dotColor = status === "won" ? "#4ade80" : status === "lost" ? "#f87171" : "#f59e0b";
+                          return (
+                            <div key={q.qid} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 9, padding: "7px 10px", background: T.surfaceHigh, borderRadius: 7 }}>
+                              <div style={{ width: 8, height: 8, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 12.5, color: T.text, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{q.clientName} — {q.companyName}</div>
+                                <div style={{ fontSize: 11, color: T.textMuted }}>{q.plan} · ₹{Number(q.totalGST || 0).toLocaleString("en-IN")}</div>
+                              </div>
+                              <div style={{ flexShrink: 0, textAlign: "right" }}>
+                                <div style={{ fontSize: 10.5, color: dotColor, fontWeight: 600, textTransform: "capitalize" }}>{status}</div>
+                                <div style={{ fontSize: 10, color: T.textMuted }}>{daysOpen}d</div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </>
+            );
+          })()}
+        </div>
+      )}
+
+      {appPage === "builder" && !preview ? (
         <div style={{ maxWidth: 720, margin: "0 auto", padding: "52px 24px 100px" }}>
           <div style={{ display: "flex", marginBottom: 52 }}>
             {STEPS.map((s, i) => (
@@ -2600,11 +2896,11 @@ ${emailDraft.body}`)} style={{ marginLeft: "auto", fontSize: 11, color: T.greenL
             </>
           )}
         </div>
-      ) : (
+      ) : appPage === "builder" ? (
         <div style={{ background: "#dde3e8", padding: "36px 20px 72px" }}>
           <PrintDoc />
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -2683,4 +2979,3 @@ function NavBtns({ prev, next, nextDisabled }) {
 const pTdc = { padding: "10px 14px", textAlign: "center", fontSize: 12.5, borderBottom: "1px solid #e5e7eb", color: "#9ca3af", width: 44 };
 const pTdl = { padding: "10px 16px", textAlign: "left", fontSize: 12.5, borderBottom: "1px solid #e5e7eb", color: "#374151" };
 const pTdr = { padding: "10px 16px", textAlign: "right", fontSize: 12.5, borderBottom: "1px solid #e5e7eb", color: "#111827" };
-
