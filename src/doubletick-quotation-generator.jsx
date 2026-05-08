@@ -89,14 +89,14 @@ const PLANS = {
   standard: {
     name: "Standard",
     subtitle: "Bulk Messaging + Google Sheets",
-    monthly: 3000, quarterly: 9000, halfYearly: 18000, yearly: 36000,
+    monthly: 6840, quarterly: 15480, halfYearly: 30960, yearly: 36000,
     monthlyNote: "Requires management approval",
     features: ["Team inbox (5 agents free)", "Send bulk broadcasts", "Bulk import", "Define customer segments", "Share products and catalogues", "Detailed broadcast analytics", "Excel export and import", "Google Sheets integration", "Access on mobile and web", "Unlimited tags", "10 custom attributes"],
   },
   pro: {
     name: "Pro",
     subtitle: "Bulk Messaging + Chatbots + Integrations",
-    monthly: 4200, quarterly: 12600, halfYearly: 25200, yearly: 50400,
+    monthly: 9960, quarterly: 21600, halfYearly: 43200, yearly: 50400,
     monthlyNote: "Requires management approval",
     features: ["Everything in Standard plan", "Team inbox (10 agents free)", "Roles & permissions", "Number masking", "Automated ordering bot", "3rd party integrations", "Developer API", "Agent & Organisation Analytics", "Reports", "30 custom attributes", "5 WhatsApp Groups included"],
   },
@@ -1248,6 +1248,7 @@ export default function App() {
       <div style={{ breakBefore: "page" }}>
         <PrintPageHeader title="Commercial Proposal" sub={`${companyName}  ·  ${effectiveBillingLabel} Billing`} clientLogo={clientLogo} companyName={companyName} theme={theme} />
         <div style={{ padding: "24px 56px" }}>
+          {/* ── Plan pricing ── */}
           <PrintSection title={`${effectiveBillingLabel} Pricing Summary`} theme={theme}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
@@ -1277,6 +1278,18 @@ export default function App() {
                   </td>
                   <td style={pTdr}><strong>INR {fmtINR(planPrice)}/-</strong></td>
                 </tr>
+                {/* ── Add-ons sub-header — only shown if any addons selected ── */}
+                {(numericAddons.length > 0 || customAddons.length > 0) && (
+                  <tr style={{ background: theme.subHeaderBg }}>
+                    <td colSpan={3} style={{ padding: "7px 16px", borderTop: `2px solid ${theme.subHeaderBorder}`, borderBottom: `1px solid ${theme.subHeaderBorder}` }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ width: 3, height: 14, background: theme.accent, borderRadius: 2 }} />
+                        <span style={{ fontSize: 10.5, fontWeight: 700, color: theme.sectionTitle, textTransform: "uppercase", letterSpacing: 1.2 }}>Optional Add-ons</span>
+                        <span style={{ fontSize: 10, color: "#9ca3af", fontStyle: "italic" }}>— selected by {companyName}</span>
+                      </div>
+                    </td>
+                  </tr>
+                )}
                 {[...numericAddons, ...customAddons].map((a, i) => {
                   const isCustom = !!a.custom;
                   const rowBg = i % 2 === 0 ? "#fff" : "#f7faf9";
@@ -1347,13 +1360,22 @@ export default function App() {
 
           {/* Features — dynamic for enterprise */}
           <PrintSection title={`DoubleTick ${planData.name} Plan — Included Features`} theme={theme}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 30px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 30px", marginBottom: 14 }}>
               {enterpriseFeatures.map((f, i) => (
                 <div key={i} style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 12.5, color: "#374151", lineHeight: 1.65 }}>
-                  <span style={{ color: "#1aad74", flexShrink: 0, marginTop: 3, fontSize: 10 }}>▶</span>
+                  <span style={{ color: theme.accent, flexShrink: 0, marginTop: 3, fontSize: 10 }}>▶</span>
                   <span>{f}</span>
                 </div>
               ))}
+            </div>
+            {/* Clarification note */}
+            <div style={{ padding: "10px 14px", background: theme.subHeaderBg, borderRadius: 7, border: `1px solid ${theme.subHeaderBorder}`, fontSize: 11.5, color: "#374151", lineHeight: 1.7, breakInside: "avoid" }}>
+              <strong style={{ color: theme.sectionTitle }}>Note: </strong>
+              The features listed above are included as part of the {planData.name} plan subscription.
+              {(numericAddons.length > 0 || customAddons.length > 0) && (
+                <> Any additional capabilities selected as add-ons (see Pricing Summary) are available as optional enhancements and will be activated as part of your deployment.</>
+              )}
+              {" "}Features not listed here are not part of the base plan and may be available as separate add-ons.
             </div>
           </PrintSection>
 
@@ -1487,10 +1509,15 @@ export default function App() {
                   ["Purchase Order", `Upon acceptance of this proposal, ${teamName} shall issue a Purchase Order (PO) to formalise the commercial agreement.`],
                   ["Advance Payment", `${teamName} agrees to remit payment in advance in accordance with the agreed commercial terms and conditions.`],
                   ["Billing Cycle", `${effectiveBillingLabel} — This proposal is structured on a ${effectiveBillingLabel.toLowerCase()} billing basis${effectiveBillingLabel === "Monthly" ? " (subject to management approval)" : ""}. Renewal terms shall be mutually agreed upon prior to the next cycle.`],
+                  ["Refund Policy", "Please refer to our refund and cancellation policy at: https://doubletick.io/refund-and-cancellations"],
                 ].map(([label, val], i) => (
                   <tr key={label} style={{ background: i % 2 === 0 ? "#f9fafb" : "#fff", borderBottom: "1px solid #e5e7eb" }}>
                     <td style={{ padding: "11px 16px", fontWeight: 600, color: "#111827", width: 190, verticalAlign: "top", fontSize: 12.5 }}>{label}</td>
-                    <td style={{ padding: "11px 16px", color: "#374151", lineHeight: 1.75, fontSize: 12.5 }}>{val}</td>
+                    <td style={{ padding: "11px 16px", color: "#374151", lineHeight: 1.75, fontSize: 12.5 }}>
+                      {label === "Refund Policy" ? (
+                        <>Please refer to our refund and cancellation policy at: <a href="https://doubletick.io/refund-and-cancellations" style={{ color: theme.accent, textDecoration: "underline" }}>doubletick.io/refund-and-cancellations</a></>
+                      ) : val}
+                    </td>
                   </tr>
                 ))}
               </tbody>
