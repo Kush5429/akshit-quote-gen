@@ -428,6 +428,46 @@ const baseInput = {
 // ─── GROQ AI SCOPE GENERATOR ──────────────────────────────────────────────────
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
 
+// ─── COMPANY AUTO-FILL ────────────────────────────────────────────────────────
+async function autoFillCompanyWithGroq(companyName) {
+  const prompt = `You are a B2B sales research assistant. Given a company name, provide structured context for a WhatsApp CRM sales quotation.
+
+Company: ${companyName}
+
+Respond ONLY with valid JSON — no markdown, no backticks, no explanation:
+{
+  "industry": "e.g. E-commerce / Jewellery / Logistics / Real Estate / EdTech",
+  "companySize": "e.g. 50-200 employees",
+  "primaryUseCase": "one sentence about their likely WhatsApp use case",
+  "scopeSuggestion": "3-4 lines of pre-filled scope of work in plain text, section headers ending with colon, one item per line. e.g.\nFor Sales:\nManage customer queries via WhatsApp\nFor Support:\nAutomate order status updates",
+  "keyPainPoints": "one sentence about what they likely struggle with"
+}`;
+
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${GROQ_API_KEY}` },
+    body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{ role: "user", content: prompt }], temperature: 0.4, max_tokens: 400 }),
+  });
+  if (!res.ok) throw new Error("Groq error");
+  const data = await res.json();
+  const raw = data.choices?.[0]?.message?.content?.trim() ?? "{}";
+  try { return JSON.parse(raw.replace(/```json|```/g, "").trim()); }
+  catch { return null; }
+}
+
+// ─── QUOTE LOG ────────────────────────────────────────────────────────────────
+const QUOTE_LOG_KEY = "dt_quote_log";
+function loadQuoteLog() {
+  try { return JSON.parse(localStorage.getItem(QUOTE_LOG_KEY) || "[]"); } catch { return []; }
+}
+function saveQuoteEntry(entry) {
+  try {
+    const log = loadQuoteLog();
+    const updated = [entry, ...log.filter(q => q.qid !== entry.qid)].slice(0, 50);
+    localStorage.setItem(QUOTE_LOG_KEY, JSON.stringify(updated));
+  } catch {}
+}
+
 // ─── QUOTATION REFERENCE ID ────────────────────────────────────────────────────
 function generateQID() {
   const year = new Date().getFullYear();
@@ -987,6 +1027,26 @@ export default function App() {
   const [templateName, setTemplateName] = useState("");
   const [showTemplates, setShowTemplates] = useState(false);
   const [loadedTemplateName, setLoadedTemplateName] = useState(""); // for toast
+  // Floating preview
+  const [showPreviewDrawer, setShowPreviewDrawer] = useState(false);
+  // Company auto-fill
+  const [autoFillLoading, setAutoFillLoading] = useState(false);
+  const [autoFillDone, setAutoFillDone] = useState(false);
+  // Quotation log
+  const [quoteLog, setQuoteLog] = useState(loadQuoteLog);
+  const [showQuoteLog, setShowQuoteLog] = useState(false);
+  // Case study page
+  const [includeCaseStudy, setIncludeCaseStudy] = useState(false);
+  const [caseStudyText, setCaseStudyText] = useState("");
+  const [caseStudyLoading, setCaseStudyLoading] = useState(false);
+  // Implementation timeline
+  const [includeTimeline, setIncludeTimeline] = useState(false);
+  const [timelineMilestones, setTimelineMilestones] = useState([
+    { week: "Week 1", title: "Onboarding & Setup", desc: "WhatsApp number activation, agent accounts created, platform walkthrough" },
+    { week: "Week 2", title: "Template & Configuration", desc: "Message templates approved, automation flows configured, integrations connected" },
+    { week: "Week 3", title: "Go-Live & Training", desc: "Team training completed, first broadcasts sent, live support active" },
+    { week: "Week 4", title: "Optimisation", desc: "Performance review, campaign tuning, CSM handover completed" },
+  ]);
   const logoRef = useRef();
   const docRef = useRef();
 
@@ -1073,6 +1133,82 @@ export default function App() {
       setRoiText(text);
     } catch(e) { setRoiError(e.message); }
     finally { setRoiLoading(false); }
+  };
+
+  // Company auto-fill
+  const handleAutoFill = async () => {
+    if (!companyName.trim() || !GROQ_API_KEY) return;
+    setAutoFillLoading(true);
+    try {
+      const data = await autoFillCompanyWithGroq(companyName);
+      if (data?.scopeSuggestion && !scope) setScope(data.scopeSuggestion);
+      setAutoFillDone(true);
+    } catch {}
+    finally { setAutoFillLoading(false); }
+  };
+
+  // Save current quote to log
+  const saveToLog = () => {
+    const entry = {
+      qid, clientName, companyName, email, plan: planData.name, billing: effectiveBillingLabel,
+      planPrice, totalGST, addons: addons.length, discount, addonDiscounts,
+      expiryDate, date: new Date().toLocaleDateString("en-IN"),
+      timestamp: Date.now(),
+      // snapshot of state for reload
+      snapshot: { plan, billing, addons, iframeSelections, discount, addonDiscounts, addonQty,
+        enterpriseCustomPrice, enterpriseAIBots, customAddonsList, customFeatures,
+        scope, includeROI, roiText, includeTimeline, includeCaseStudy, caseStudyText, expiryDate,
+        pdfTheme, clientName, companyName, email }
+    };
+    saveQuoteEntry(entry);
+    setQuoteLog(loadQuoteLog());
+  };
+
+  // Load quote from log
+  const loadFromLog = (entry) => {
+    const s = entry.snapshot;
+    if (!s) return;
+    setPlan(s.plan ?? "pro"); setBilling(s.billing ?? "quarterly");
+    setAddons(s.addons || []); setIframeSelections(s.iframeSelections || {});
+    setDiscount(s.discount || 0); setAddonDiscounts(s.addonDiscounts || {});
+    setAddonQty(s.addonQty || {}); setEnterpriseCustomPrice(s.enterpriseCustomPrice || "");
+    setEnterpriseAIBots(s.enterpriseAIBots || false); setCustomAddonsList(s.customAddonsList || []);
+    setCustomFeatures(s.customFeatures ?? null); setScope(s.scope || "");
+    setIncludeROI(s.includeROI || false); setRoiText(s.roiText || "");
+    setIncludeTimeline(s.includeTimeline || false); setIncludeCaseStudy(s.includeCaseStudy || false);
+    setCaseStudyText(s.caseStudyText || ""); setExpiryDate(s.expiryDate || "");
+    setPdfTheme(s.pdfTheme || "green"); setClientName(s.clientName || "");
+    setCompanyName(s.companyName || ""); setEmail(s.email || "");
+    setShowQuoteLog(false); setStep(1);
+  };
+
+  // Case study generation
+  const handleGenerateCaseStudy = async () => {
+    setCaseStudyLoading(true);
+    try {
+      const prompt = `You are a B2B SaaS sales expert at DoubleTick (WhatsApp CRM). 
+Write 2 short client case studies relevant to: ${companyName} in their industry (infer from scope: ${scope || "general business"}).
+
+Pick 2 from this real client list: GRT Jewellers, Raheja Developers, Sabyasachi, Tupperware, BVC Logistics, Malabar Diamonds, ICRA, Birla Brainiacs
+
+FORMAT (strict):
+[Client Name]:
+Industry: [industry]
+Challenge: [one sentence problem they had]
+Solution: [one sentence how DoubleTick helped]
+Result: [one sentence outcome with a number if possible]
+
+Output ONLY the 2 case studies in this format, no preamble.`;
+
+      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${GROQ_API_KEY}` },
+        body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{ role: "user", content: prompt }], temperature: 0.5, max_tokens: 500 }),
+      });
+      const data = await res.json();
+      setCaseStudyText(data.choices?.[0]?.message?.content?.trim() ?? "");
+    } catch {}
+    finally { setCaseStudyLoading(false); }
   };
 
   // Email generation
@@ -1311,22 +1447,24 @@ export default function App() {
                   return (
                     <tr key={a.id} style={{ background: rowBg }}>
                       <td style={{ ...pTdc, padding: "13px 16px", color: "#9ca3af", fontSize: 12 }}>{i + 2}</td>
-                      <td style={{ ...pTdl, padding: "13px 18px" }}>
-                        <div style={{ fontWeight: 600, color: "#374151", fontSize: 13, marginBottom: 3 }}>
-                          {a.label}
-                          {iframeSelections[a.id] === "iframe" && a.iframeYearly && (
-                            <span style={{ fontSize: 10.5, color: "#9ca3af", marginLeft: 6, fontWeight: 400 }}>(with iframe)</span>
+                      <td style={{ ...pTdl, padding: "10px 18px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+                          <span style={{ fontWeight: 600, color: "#374151", fontSize: 13 }}>
+                            {a.label}
+                            {iframeSelections[a.id] === "iframe" && a.iframeYearly && (
+                              <span style={{ fontSize: 10.5, color: "#9ca3af", marginLeft: 5, fontWeight: 400 }}>(with iframe)</span>
+                            )}
+                          </span>
+                          {disc > 0 && (
+                            <span style={{ fontSize: 9.5, color: "#16a34a", fontWeight: 600, background: "#f0fdf4", borderRadius: 3, padding: "1px 5px", border: "1px solid #bbf7d0", whiteSpace: "nowrap" }}>
+                              {disc}% off
+                            </span>
                           )}
                         </div>
-                        {a.desc && <div style={{ fontSize: 11, color: "#9ca3af", fontStyle: "italic", lineHeight: 1.55, marginBottom: disc > 0 ? 3 : 0 }}>{a.desc}</div>}
-                        {a.perUnit && getQty(a.id) > 1 && <div style={{ fontSize: 11, color: "#9ca3af" }}>{getQty(a.id)} × {a.unitLabel} @ ₹{fmtINR(getAddonUnitPrice(a, plan, billing))}/{a.unitLabel}</div>}
-                        {disc > 0 && (
-                          <div style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 3, fontSize: 10.5, color: "#16a34a", fontWeight: 600, background: "#f0fdf4", borderRadius: 4, padding: "1px 6px" }}>
-                            <span>✓</span> {disc}% discount applied
-                          </div>
-                        )}
+                        {a.desc && <div style={{ fontSize: 10.5, color: "#9ca3af", fontStyle: "italic", lineHeight: 1.5, marginTop: 1 }}>{a.desc}</div>}
+                        {a.perUnit && getQty(a.id) > 1 && <div style={{ fontSize: 10.5, color: "#9ca3af", marginTop: 1 }}>{getQty(a.id)} × {a.unitLabel} @ ₹{fmtINR(getAddonUnitPrice(a, plan, billing))}/{a.unitLabel}</div>}
                       </td>
-                      <td style={{ ...pTdr, padding: "13px 18px", verticalAlign: "top" }}>
+                      <td style={{ ...pTdr, padding: "10px 18px", verticalAlign: "middle" }}>
                         {isCustomAddon ? (
                           <div style={{ fontSize: 12.5, fontWeight: 600, color: theme.accent, fontStyle: "italic" }}>{a.custom}</div>
                         ) : (
@@ -1451,6 +1589,78 @@ export default function App() {
               Based on DoubleTick {planData.name} plan ({effectiveBillingLabel} billing) · Investment: ₹{fmtINR(totalGST)}/- incl. GST
             </div>
             {renderScopeLines(roiText, theme)}
+          </div>
+        </div>
+      )}
+
+      {/* PAGE CASE STUDY — optional */}
+      {includeCaseStudy && caseStudyText && (
+        <div style={{ breakBefore: "page" }}>
+          <PrintPageHeader title="Why DoubleTick" sub="Client Success Stories" clientLogo={clientLogo} companyName={companyName} theme={theme} />
+          <div style={{ padding: "28px 56px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+              <div style={{ width: 4, height: 24, background: theme.headerSolid, borderRadius: 2, flexShrink: 0 }} />
+              <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 17, fontWeight: 700, color: theme.sectionTitle }}>Trusted by Industry Leaders</div>
+            </div>
+            <p style={{ color: "#6b7280", fontSize: 12.5, marginBottom: 20, lineHeight: 1.7 }}>
+              DoubleTick powers some of India's most recognised brands. Here are two examples most relevant to {companyName}'s context.
+            </p>
+            <div style={{ display: "grid", gap: 16 }}>
+              {caseStudyText.split("\n\n").filter(s => s.trim()).map((study, i) => {
+                const lines = study.trim().split("\n").filter(l => l.trim());
+                const title = lines[0]?.replace(/:$/, "");
+                const fields = lines.slice(1).map(l => { const [k, ...v] = l.split(":"); return { k: k?.trim(), v: v.join(":").trim() }; }).filter(f => f.k && f.v);
+                return (
+                  <div key={i} style={{ padding: "16px 20px", background: theme.subHeaderBg, borderRadius: 10, border: `1px solid ${theme.subHeaderBorder}`, breakInside: "avoid" }}>
+                    <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 15, fontWeight: 700, color: theme.sectionTitle, marginBottom: 10 }}>{title}</div>
+                    <div style={{ display: "grid", gap: 7 }}>
+                      {fields.map(({ k, v }) => (
+                        <div key={k} style={{ display: "flex", gap: 10, fontSize: 12.5 }}>
+                          <strong style={{ flexShrink: 0, width: 80, color: theme.sectionTitle, fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5, paddingTop: 2 }}>{k}</strong>
+                          <span style={{ color: "#374151", lineHeight: 1.6 }}>{v}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PAGE TIMELINE — optional */}
+      {includeTimeline && (
+        <div style={{ breakBefore: "page" }}>
+          <PrintPageHeader title="Implementation Plan" sub="What happens after you sign" clientLogo={clientLogo} companyName={companyName} theme={theme} />
+          <div style={{ padding: "28px 56px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+              <div style={{ width: 4, height: 24, background: theme.headerSolid, borderRadius: 2, flexShrink: 0 }} />
+              <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 17, fontWeight: 700, color: theme.sectionTitle }}>Your Onboarding Timeline</div>
+            </div>
+            <p style={{ color: "#6b7280", fontSize: 12.5, marginBottom: 22, lineHeight: 1.7 }}>
+              Here's exactly what to expect after the agreement is signed. Our team handles every step.
+            </p>
+            <div style={{ position: "relative" }}>
+              {/* Vertical line */}
+              <div style={{ position: "absolute", left: 28, top: 0, bottom: 0, width: 2, background: theme.accentLight || "#d1fae5" }} />
+              {timelineMilestones.filter(m => m.title).map((m, i) => (
+                <div key={i} style={{ display: "flex", gap: 20, marginBottom: 20, position: "relative", breakInside: "avoid" }}>
+                  {/* Circle */}
+                  <div style={{ width: 56, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, zIndex: 1 }}>
+                    <div style={{ width: 22, height: 22, borderRadius: "50%", background: theme.headerSolid, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <span style={{ color: "#fff", fontSize: 9, fontWeight: 700 }}>{i + 1}</span>
+                    </div>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: theme.accent || "#1aad74", textTransform: "uppercase", letterSpacing: 0.5, whiteSpace: "nowrap" }}>{m.week}</span>
+                  </div>
+                  {/* Content */}
+                  <div style={{ flex: 1, padding: "12px 16px", background: "#fff", borderRadius: 9, border: `1px solid ${theme.subHeaderBorder || "#a7f0c8"}`, marginBottom: 2 }}>
+                    <div style={{ fontWeight: 700, color: "#111827", fontSize: 13, marginBottom: 4 }}>{m.title}</div>
+                    <div style={{ color: "#6b7280", fontSize: 12, lineHeight: 1.6 }}>{m.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -1615,6 +1825,18 @@ export default function App() {
           <div style={{ padding: "3px 10px", background: T.surfaceHigh, borderRadius: 20, border: `1px solid ${T.border}`, fontSize: 11, color: T.textSub, fontWeight: 600, letterSpacing: 0.5 }}>{qid}</div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {/* Quote Log */}
+          <button onClick={() => setShowQuoteLog(p => !p)} style={{ padding: "6px 12px", background: showQuoteLog ? "rgba(23,160,102,0.12)" : "transparent", border: `1px solid ${showQuoteLog ? T.green : T.borderMed}`, borderRadius: 7, color: T.textSub, cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", gap: 6, fontWeight: 500 }}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.3"/><path d="M4 4.5h6M4 7h6M4 9.5h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+            History {quoteLog.length > 0 && <span style={{ background: T.green, color: "#fff", borderRadius: 10, fontSize: 9.5, padding: "1px 5px", fontWeight: 700 }}>{quoteLog.length}</span>}
+          </button>
+          {/* Floating preview */}
+          {!preview && (
+            <button onClick={() => setShowPreviewDrawer(p => !p)} style={{ padding: "6px 12px", background: showPreviewDrawer ? "rgba(23,160,102,0.12)" : "transparent", border: `1px solid ${showPreviewDrawer ? T.green : T.borderMed}`, borderRadius: 7, color: T.textSub, cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", gap: 6, fontWeight: 500 }}>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7s2.5-4.5 6-4.5S13 7 13 7s-2.5 4.5-6 4.5S1 7 1 7z" stroke="currentColor" strokeWidth="1.3"/><circle cx="7" cy="7" r="1.8" stroke="currentColor" strokeWidth="1.3"/></svg>
+              Preview
+            </button>
+          )}
           {/* PDF Theme Toggle */}
           <div style={{ display: "flex", background: T.surfaceHigh, borderRadius: 8, border: `1px solid ${T.border}`, overflow: "hidden" }}>
             {[["green","Green"],["navy","Navy"]].map(([t, label]) => (
@@ -1629,6 +1851,53 @@ export default function App() {
           ) : null}
         </div>
       </div>
+
+      {/* ── QUOTE LOG DRAWER ── */}
+      {showQuoteLog && (
+        <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, padding: "16px 28px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>Quote History</div>
+            <button onClick={() => setShowQuoteLog(false)} style={{ background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 18 }}>✕</button>
+          </div>
+          {quoteLog.length === 0 ? (
+            <div style={{ fontSize: 13, color: T.textMuted, padding: "12px 0" }}>No quotes saved yet. Generate a quotation and it will appear here.</div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 8 }}>
+              {quoteLog.map(q => (
+                <div key={q.qid} style={{ padding: "11px 14px", background: T.surfaceHigh, borderRadius: 9, border: `1px solid ${T.border}` }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 5 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{q.clientName}</div>
+                    <span style={{ fontSize: 9.5, color: T.textMuted, background: "#0d1520", borderRadius: 4, padding: "1px 6px", border: `1px solid ${T.border}`, fontWeight: 500 }}>{q.qid}</span>
+                  </div>
+                  <div style={{ fontSize: 11.5, color: T.textMuted, marginBottom: 6 }}>{q.companyName} · {q.plan} · {q.billing}</div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: T.greenLt }}>₹{Number(q.totalGST || 0).toLocaleString("en-IN")}</span>
+                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      <span style={{ fontSize: 10.5, color: T.textMuted }}>{q.date}</span>
+                      <button onClick={() => loadFromLog(q)} style={{ padding: "3px 10px", background: T.green, border: "none", borderRadius: 5, color: "#fff", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Load</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── FLOATING PREVIEW DRAWER ── */}
+      {showPreviewDrawer && !preview && (
+        <div style={{ position: "fixed", top: 60, right: 0, width: 400, height: "calc(100vh - 60px)", background: T.surface, borderLeft: `1px solid ${T.border}`, zIndex: 200, display: "flex", flexDirection: "column", boxShadow: "-4px 0 20px rgba(0,0,0,0.3)" }}>
+          <div style={{ padding: "12px 16px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>Live Preview</div>
+            <button onClick={() => setShowPreviewDrawer(false)} style={{ background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 18 }}>✕</button>
+          </div>
+          <div style={{ flex: 1, overflow: "auto", background: "#dde3e8", padding: 12 }}>
+            <div style={{ transform: "scale(0.45)", transformOrigin: "top left", width: "222%", pointerEvents: "none" }}>
+              <PrintDoc />
+            </div>
+          </div>
+        </div>
+      )}
 
       {!preview ? (
         <div style={{ maxWidth: 720, margin: "0 auto", padding: "52px 24px 100px" }}>
@@ -1720,7 +1989,25 @@ export default function App() {
               <PanelCard>
                 <div style={{ display: "grid", gap: 20 }}>
                   <FField label="Client's Full Name *"><input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="e.g. Anurag Sharma" style={baseInput} /></FField>
-                  <FField label="Company Name *"><input value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="e.g. XFAS Logistics" style={baseInput} /></FField>
+                  <FField label="Company Name *">
+                    <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                      <input value={companyName} onChange={e => { setCompanyName(e.target.value); setAutoFillDone(false); }} placeholder="e.g. XFAS Logistics" style={{ ...baseInput, flex: 1 }} />
+                      {GROQ_API_KEY && companyName.trim().length > 2 && (
+                        <button
+                          onClick={handleAutoFill}
+                          disabled={autoFillLoading}
+                          title="AI: pre-fill scope & context from company name"
+                          style={{ flexShrink: 0, padding: "0 14px", height: 42, background: autoFillDone ? "rgba(23,160,102,0.15)" : "rgba(23,160,102,0.07)", border: `1.5px solid ${autoFillDone ? T.green : T.borderMed}`, borderRadius: 8, color: autoFillDone ? T.greenLt : T.textSub, cursor: autoFillLoading ? "wait" : "pointer", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}
+                        >
+                          {autoFillLoading
+                            ? <><span style={{ display: "inline-block", width: 12, height: 12, border: "2px solid rgba(255,255,255,0.2)", borderTopColor: T.greenLt, borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />Searching…</>
+                            : autoFillDone ? "✓ AI filled" : "✨ Auto-fill"
+                          }
+                        </button>
+                      )}
+                    </div>
+                    {autoFillDone && <div style={{ marginTop: 5, fontSize: 11.5, color: T.greenLt }}>✓ Scope pre-filled from company context — review in Step 4</div>}
+                  </FField>
                   <FField label="Email Address"><input value={email} onChange={e => setEmail(e.target.value)} placeholder="e.g. contact@xfaslogistics.com" type="email" style={baseInput} /></FField>
                   <FField label="Client Company Logo">
                     <div onClick={() => logoRef.current.click()} style={{ border: `2px dashed ${clientLogo ? T.green : T.border}`, borderRadius: 11, padding: clientLogo ? "20px 24px" : "30px 24px", textAlign: "center", cursor: "pointer", background: clientLogo ? "rgba(23,160,102,0.04)" : "#0d1520", transition: "all 0.2s" }} onMouseEnter={e => !clientLogo && (e.currentTarget.style.borderColor = T.greenDk)} onMouseLeave={e => !clientLogo && (e.currentTarget.style.borderColor = T.border)}>
@@ -2259,9 +2546,64 @@ ${emailDraft.body}`)} style={{ marginLeft: "auto", fontSize: 11, color: T.greenL
                   ) : null)}
                 </div>
 
+                {/* ── CASE STUDY TOGGLE ── */}
+                <div style={{ marginTop: 14, padding: "14px 16px", background: T.surfaceHigh, borderRadius: 10, border: `1px solid ${includeCaseStudy ? T.green : T.border}`, transition: "border-color 0.2s" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <div style={{ fontSize: 13.5, fontWeight: 600, color: T.text }}>Include Client Case Studies</div>
+                      <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 2 }}>AI picks 2 relevant stories from DoubleTick's real client base based on your scope</div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, flexShrink: 0, marginLeft: 16 }}>
+                      <button onClick={() => setIncludeCaseStudy(false)} style={{ padding: "6px 14px", borderRadius: 6, border: `1.5px solid ${!includeCaseStudy ? T.green : T.border}`, background: !includeCaseStudy ? "rgba(23,160,102,0.1)" : "transparent", color: !includeCaseStudy ? T.greenLt : T.textSub, cursor: "pointer", fontSize: 12.5, fontWeight: 600 }}>No</button>
+                      <button onClick={() => { setIncludeCaseStudy(true); if (!caseStudyText) handleGenerateCaseStudy(); }} style={{ padding: "6px 14px", borderRadius: 6, border: `1.5px solid ${includeCaseStudy ? T.green : T.border}`, background: includeCaseStudy ? "rgba(23,160,102,0.1)" : "transparent", color: includeCaseStudy ? T.greenLt : T.textSub, cursor: "pointer", fontSize: 12.5, fontWeight: 600 }}>Yes</button>
+                    </div>
+                  </div>
+                  {includeCaseStudy && (
+                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${T.border}` }}>
+                      {caseStudyLoading ? (
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, color: T.textMuted, fontSize: 13 }}>
+                          <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid rgba(255,255,255,0.2)", borderTopColor: T.greenLt, borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+                          Selecting relevant case studies…
+                        </div>
+                      ) : caseStudyText ? (
+                        <div>
+                          <textarea value={caseStudyText} onChange={e => setCaseStudyText(e.target.value)} rows={7} style={{ ...baseInput, fontSize: 12.5, lineHeight: 1.65, resize: "vertical" }} />
+                          <button onClick={handleGenerateCaseStudy} style={{ marginTop: 6, fontSize: 11.5, color: T.greenLt, background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}>↺ Regenerate</button>
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+
+                {/* ── TIMELINE TOGGLE ── */}
+                <div style={{ marginTop: 14, padding: "14px 16px", background: T.surfaceHigh, borderRadius: 10, border: `1px solid ${includeTimeline ? T.green : T.border}`, transition: "border-color 0.2s" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <div style={{ fontSize: 13.5, fontWeight: 600, color: T.text }}>Include Implementation Timeline</div>
+                      <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 2 }}>Shows the client exactly what happens after they sign — Week 1 to Go-Live</div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, flexShrink: 0, marginLeft: 16 }}>
+                      <button onClick={() => setIncludeTimeline(false)} style={{ padding: "6px 14px", borderRadius: 6, border: `1.5px solid ${!includeTimeline ? T.green : T.border}`, background: !includeTimeline ? "rgba(23,160,102,0.1)" : "transparent", color: !includeTimeline ? T.greenLt : T.textSub, cursor: "pointer", fontSize: 12.5, fontWeight: 600 }}>No</button>
+                      <button onClick={() => setIncludeTimeline(true)} style={{ padding: "6px 14px", borderRadius: 6, border: `1.5px solid ${includeTimeline ? T.green : T.border}`, background: includeTimeline ? "rgba(23,160,102,0.1)" : "transparent", color: includeTimeline ? T.greenLt : T.textSub, cursor: "pointer", fontSize: 12.5, fontWeight: 600 }}>Yes</button>
+                    </div>
+                  </div>
+                  {includeTimeline && (
+                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${T.border}`, display: "grid", gap: 8 }}>
+                      {timelineMilestones.map((m, i) => (
+                        <div key={i} style={{ display: "grid", gridTemplateColumns: "80px 1fr 1fr", gap: 8, alignItems: "center" }}>
+                          <input value={m.week} onChange={e => setTimelineMilestones(ms => ms.map((x, j) => j === i ? {...x, week: e.target.value} : x))} style={{ ...baseInput, fontSize: 12, padding: "6px 9px", textAlign: "center" }} />
+                          <input value={m.title} onChange={e => setTimelineMilestones(ms => ms.map((x, j) => j === i ? {...x, title: e.target.value} : x))} placeholder="Title" style={{ ...baseInput, fontSize: 12, padding: "6px 9px" }} />
+                          <input value={m.desc} onChange={e => setTimelineMilestones(ms => ms.map((x, j) => j === i ? {...x, desc: e.target.value} : x))} placeholder="Description" style={{ ...baseInput, fontSize: 12, padding: "6px 9px" }} />
+                        </div>
+                      ))}
+                      <button onClick={() => setTimelineMilestones(ms => [...ms, { week: `Week ${ms.length + 1}`, title: "", desc: "" }])} style={{ background: "none", border: `1px dashed ${T.border}`, borderRadius: 7, color: T.textMuted, cursor: "pointer", padding: "6px 14px", fontSize: 12, marginTop: 4 }}>+ Add milestone</button>
+                    </div>
+                  )}
+                </div>
+
                 <div style={{ marginTop: 24, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <button onClick={() => setStep(3)} style={{ padding: "10px 20px", background: "transparent", border: `1px solid ${T.borderMed}`, borderRadius: 8, color: T.textSub, cursor: "pointer", fontSize: 13 }}>← Back</button>
-                  <button onClick={() => setPreview(true)} style={{ padding: "12px 34px", background: `linear-gradient(135deg, ${T.green}, ${T.greenDk})`, border: "none", borderRadius: 9, color: "#fff", cursor: "pointer", fontSize: 14, fontWeight: 700, letterSpacing: 0.3 }}>Generate Quotation →</button>
+                  <button onClick={() => { saveToLog(); setPreview(true); }} style={{ padding: "12px 34px", background: `linear-gradient(135deg, ${T.green}, ${T.greenDk})`, border: "none", borderRadius: 9, color: "#fff", cursor: "pointer", fontSize: 14, fontWeight: 700, letterSpacing: 0.3 }}>Generate Quotation →</button>
                 </div>
               </PanelCard>
             </>
