@@ -1250,112 +1250,138 @@ export default function App() {
         <div style={{ padding: "24px 56px" }}>
           {/* ── Plan pricing ── */}
           <PrintSection title={`${effectiveBillingLabel} Pricing Summary`} theme={theme}>
+            <div style={{ borderRadius: 10, overflow: "hidden", border: "1px solid #e5e7eb", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
-                <tr style={{ background: theme.headerSolid, color: "#fff" }}>
-                  <th style={{ padding: "11px 14px", textAlign: "center", width: 44, fontWeight: 600, fontSize: 12 }}>#</th>
-                  <th style={{ padding: "11px 16px", textAlign: "left", fontWeight: 600, fontSize: 12 }}>Particulars</th>
-                  <th style={{ padding: "11px 16px", textAlign: "right", fontWeight: 600, fontSize: 12 }}>Amount (excl. GST)</th>
+                <tr style={{ background: theme.headerSolid }}>
+                  <th style={{ padding: "12px 16px", textAlign: "center", width: 48, fontWeight: 600, fontSize: 11, color: "rgba(255,255,255,0.7)", letterSpacing: 0.5 }}>#</th>
+                  <th style={{ padding: "12px 18px", textAlign: "left", fontWeight: 600, fontSize: 11, color: "rgba(255,255,255,0.7)", letterSpacing: 0.5 }}>PARTICULARS</th>
+                  <th style={{ padding: "12px 18px", textAlign: "right", fontWeight: 600, fontSize: 11, color: "rgba(255,255,255,0.7)", letterSpacing: 0.5 }}>AMOUNT (EXCL. GST)</th>
                 </tr>
               </thead>
               <tbody>
-                <tr style={{ background: "#f7faf9" }}>
-                  <td style={pTdc}>1</td>
-                  <td style={pTdl}>
-                    DoubleTick {planData.name} Plan &mdash; {effectiveBillingLabel}
-                    {discount > 0 && <div style={{ fontSize: 11, color: "#1aad74", marginTop: 2, fontWeight: 600 }}>{discount}% discount applied · Original: ₹{fmtINR(planPriceOriginal)}</div>}
+                {/* Plan row */}
+                <tr style={{ background: "#fff" }}>
+                  <td style={{ ...pTdc, padding: "14px 16px", color: theme.sectionTitle, fontWeight: 700, fontSize: 13 }}>1</td>
+                  <td style={{ ...pTdl, padding: "14px 18px" }}>
+                    <div style={{ fontWeight: 700, color: "#111827", fontSize: 13.5, marginBottom: 3 }}>DoubleTick {planData.name} Plan &mdash; {effectiveBillingLabel}</div>
+                    {discount > 0 && (
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 10.5, color: "#16a34a", fontWeight: 600, background: "#f0fdf4", borderRadius: 4, padding: "2px 7px", marginBottom: 3 }}>
+                        <span>✓</span> {discount}% discount · was INR {fmtINR(planPriceOriginal)}/-
+                      </div>
+                    )}
                     {(() => {
                       const billingMonths = { monthly: 1, quarterly: 3, halfYearly: 6, yearly: 12 }[billing] || 1;
                       const baseMonthly = Math.round(basePlanPrice / billingMonths);
                       return baseMonthly > 0 ? (
-                        <div style={{ fontSize: 10.5, color: "#9ca3af", marginTop: 2 }}>
+                        <div style={{ fontSize: 11, color: "#9ca3af" }}>
                           {plan === "enterprise" && enterpriseAIBots
                             ? `Base: ₹${fmtINR(Math.round((basePlanPrice - aiBotsAddon) / billingMonths))}/mo + AI Bots: ₹15,000/mo`
-                            : `Base: ₹${fmtINR(baseMonthly)}/month`}
+                            : `₹${fmtINR(baseMonthly)}/month × ${billingMonths} month${billingMonths > 1 ? "s" : ""}`}
                         </div>
                       ) : null;
                     })()}
                   </td>
-                  <td style={pTdr}><strong>INR {fmtINR(planPrice)}/-</strong></td>
+                  <td style={{ ...pTdr, padding: "14px 18px" }}>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: "#111827" }}>INR {fmtINR(planPrice)}/-</div>
+                  </td>
                 </tr>
-                {/* ── Add-ons sub-header — only shown if any addons selected ── */}
-                {(numericAddons.length > 0 || customAddons.length > 0) && (
-                  <tr style={{ background: theme.subHeaderBg }}>
-                    <td colSpan={3} style={{ padding: "7px 16px", borderTop: `2px solid ${theme.subHeaderBorder}`, borderBottom: `1px solid ${theme.subHeaderBorder}` }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{ width: 3, height: 14, background: theme.accent, borderRadius: 2 }} />
-                        <span style={{ fontSize: 10.5, fontWeight: 700, color: theme.sectionTitle, textTransform: "uppercase", letterSpacing: 1.2 }}>Optional Add-ons</span>
-                        <span style={{ fontSize: 10, color: "#9ca3af", fontStyle: "italic" }}>— selected by {companyName}</span>
+
+                {/* Optional Add-ons sub-header */}
+                {(numericAddons.length > 0 || customAddons.length > 0 || customAddonsList.length > 0) && (
+                  <tr>
+                    <td colSpan={3} style={{ padding: "0" }}>
+                      <div style={{ display: "flex", alignItems: "center", background: theme.subHeaderBg, borderTop: `2px solid ${theme.subHeaderBorder}`, borderBottom: `1px solid ${theme.subHeaderBorder}`, padding: "8px 18px", gap: 10 }}>
+                        <div style={{ width: 3, height: 16, background: theme.accent, borderRadius: 2, flexShrink: 0 }} />
+                        <span style={{ fontSize: 10, fontWeight: 700, color: theme.sectionTitle, textTransform: "uppercase", letterSpacing: 1.8 }}>Optional Add-ons</span>
+                        <span style={{ fontSize: 10.5, color: "#9ca3af" }}>selected by {companyName}</span>
+                        <div style={{ marginLeft: "auto", fontSize: 10, color: "#9ca3af" }}>{numericAddons.length + customAddons.length + customAddonsList.length} item{(numericAddons.length + customAddons.length + customAddonsList.length) !== 1 ? "s" : ""}</div>
                       </div>
                     </td>
                   </tr>
                 )}
+
+                {/* Addon rows */}
                 {[...numericAddons, ...customAddons].map((a, i) => {
-                  const isCustom = !!a.custom;
-                  const rowBg = i % 2 === 0 ? "#fff" : "#f7faf9";
-                  const linePrice = isCustom ? null : getAddonLinePrice(a);
+                  const isCustomAddon = !!a.custom;
+                  const linePrice = isCustomAddon ? null : getAddonLinePrice(a);
                   const disc = getAddonDiscount(a.id);
                   const discountedLine = linePrice != null ? getAddonDiscountedPrice(a) : null;
+                  const rowBg = i % 2 === 0 ? "#fafafa" : "#fff";
                   return (
                     <tr key={a.id} style={{ background: rowBg }}>
-                      <td style={pTdc}>{i + 2}</td>
-                      <td style={pTdl}>
-                        <div style={{ fontWeight: 500, color: "#374151", lineHeight: 1.4 }}>
+                      <td style={{ ...pTdc, padding: "13px 16px", color: "#9ca3af", fontSize: 12 }}>{i + 2}</td>
+                      <td style={{ ...pTdl, padding: "13px 18px" }}>
+                        <div style={{ fontWeight: 600, color: "#374151", fontSize: 13, marginBottom: 3 }}>
                           {a.label}
                           {iframeSelections[a.id] === "iframe" && a.iframeYearly && (
-                            <span style={{ fontSize: 11, color: "#9ca3af", marginLeft: 6 }}>(with iframe)</span>
+                            <span style={{ fontSize: 10.5, color: "#9ca3af", marginLeft: 6, fontWeight: 400 }}>(with iframe)</span>
                           )}
                         </div>
-                        {a.desc && (
-                          <div style={{ fontSize: 10.5, color: "#9ca3af", marginTop: 3, fontStyle: "italic", lineHeight: 1.5 }}>{a.desc}</div>
+                        {a.desc && <div style={{ fontSize: 11, color: "#9ca3af", fontStyle: "italic", lineHeight: 1.55, marginBottom: disc > 0 ? 3 : 0 }}>{a.desc}</div>}
+                        {a.perUnit && getQty(a.id) > 1 && <div style={{ fontSize: 11, color: "#9ca3af" }}>{getQty(a.id)} × {a.unitLabel} @ ₹{fmtINR(getAddonUnitPrice(a, plan, billing))}/{a.unitLabel}</div>}
+                        {disc > 0 && (
+                          <div style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 3, fontSize: 10.5, color: "#16a34a", fontWeight: 600, background: "#f0fdf4", borderRadius: 4, padding: "1px 6px" }}>
+                            <span>✓</span> {disc}% discount applied
+                          </div>
                         )}
-                        {a.perUnit && getQty(a.id) > 1 && (
-                          <div style={{ fontSize: 10.5, color: "#9ca3af", marginTop: 2 }}>{getQty(a.id)} × {a.unitLabel} @ ₹{fmtINR(getAddonUnitPrice(a, plan, billing))}/{a.unitLabel}</div>
-                        )}
-                        {disc > 0 && <div style={{ fontSize: 10.5, color: "#16a34a", marginTop: 2, fontWeight: 600 }}>{disc}% discount applied</div>}
                       </td>
-                      <td style={pTdr}>
-                        {isCustom ? (
-                          <span style={{ color: "#1aad74", fontStyle: "italic", fontWeight: 600 }}>{a.custom}</span>
+                      <td style={{ ...pTdr, padding: "13px 18px", verticalAlign: "top" }}>
+                        {isCustomAddon ? (
+                          <div style={{ fontSize: 12.5, fontWeight: 600, color: theme.accent, fontStyle: "italic" }}>{a.custom}</div>
                         ) : (
                           <>
                             {disc > 0 && linePrice != null && (
-                              <div style={{ fontSize: 10.5, color: "#9ca3af", textDecoration: "line-through", textAlign: "right" }}>INR {fmtINR(linePrice)}/-</div>
+                              <div style={{ fontSize: 10.5, color: "#9ca3af", textDecoration: "line-through", textAlign: "right", marginBottom: 2 }}>INR {fmtINR(linePrice)}/-</div>
                             )}
-                            <strong>INR {fmtINR(discountedLine ?? linePrice)}/-</strong>
-                            <div style={{ fontSize: 10, color: "#9ca3af", fontWeight: 400 }}>{BILLING_LABELS[billing]}</div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: disc > 0 ? "#16a34a" : "#111827" }}>INR {fmtINR(discountedLine ?? linePrice)}/-</div>
+                            <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 1 }}>{BILLING_LABELS[billing]}</div>
                           </>
                         )}
                       </td>
                     </tr>
                   );
                 })}
+
+                {/* Custom addons */}
                 {customAddonsList.map((ca, i) => (
-                  <tr key={ca.id} style={{ background: ([...numericAddons, ...customAddons].length + i) % 2 === 0 ? "#fff" : "#f7faf9" }}>
-                    <td style={pTdc}>{numericAddons.length + customAddons.length + i + 2}</td>
-                    <td style={pTdl}>
-                      <div style={{ fontWeight: 500, color: "#374151" }}>{ca.label}</div>
+                  <tr key={ca.id} style={{ background: ([...numericAddons, ...customAddons].length + i) % 2 === 0 ? "#fafafa" : "#fff" }}>
+                    <td style={{ ...pTdc, padding: "13px 16px", color: "#9ca3af", fontSize: 12 }}>{numericAddons.length + customAddons.length + i + 2}</td>
+                    <td style={{ ...pTdl, padding: "13px 18px" }}>
+                      <div style={{ fontWeight: 600, color: "#374151", fontSize: 13 }}>{ca.label}</div>
                     </td>
-                    <td style={{ ...pTdr, color: "#1aad74", fontStyle: "italic" }}>
-                      {ca.price ? `INR ${Number(ca.price).toLocaleString("en-IN")}/-` : "—"}
-                      {ca.billing !== "custom" && <div style={{ fontSize: 10, color: "#9ca3af", fontWeight: 400 }}>{ca.billing}</div>}
+                    <td style={{ ...pTdr, padding: "13px 18px" }}>
+                      <div style={{ fontSize: 13.5, fontWeight: 700, color: theme.accent, fontStyle: "italic" }}>{ca.price ? `INR ${Number(ca.price).toLocaleString("en-IN")}/-` : "—"}</div>
+                      {ca.billing !== "custom" && <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 1 }}>{ca.billing}</div>}
                     </td>
                   </tr>
                 ))}
+
+                {/* Savings row */}
                 {totalAddonSaving > 0 && (
-                  <tr style={{ background: "#f0fdf8" }}>
-                    <td style={pTdc}>—</td>
-                    <td style={{ ...pTdl, color: "#16a34a", fontWeight: 600 }}>Add-on Discounts (per line item)</td>
-                    <td style={{ ...pTdr, color: "#16a34a", fontWeight: 700 }}>−INR {fmtINR(totalAddonSaving)}/-</td>
+                  <tr style={{ background: "#f0fdf4" }}>
+                    <td style={{ ...pTdc, padding: "10px 16px" }}>—</td>
+                    <td style={{ ...pTdl, padding: "10px 18px", color: "#16a34a", fontWeight: 600, fontSize: 12 }}>
+                      Add-on Discounts Applied
+                      <div style={{ fontSize: 10.5, color: "#9ca3af", fontWeight: 400 }}>Per line item</div>
+                    </td>
+                    <td style={{ ...pTdr, padding: "10px 18px", color: "#16a34a", fontWeight: 700 }}>−INR {fmtINR(totalAddonSaving)}/-</td>
                   </tr>
                 )}
-                <tr>
-                  <td colSpan={2} style={{ padding: "12px 16px", textAlign: "right", fontSize: 12.5, color: "#6b7280", borderTop: "1.5px solid #d1fae5" }}>Subtotal + 18% GST</td>
-                  <td style={{ padding: "12px 16px", textAlign: "right", fontSize: 15, fontWeight: 700, color: "#0b5235", borderTop: "1.5px solid #d1fae5" }}>INR {fmtINR(totalGST)}/-</td>
+
+                {/* Total row */}
+                <tr style={{ background: theme.subHeaderBg }}>
+                  <td colSpan={2} style={{ padding: "14px 18px", textAlign: "right", fontSize: 12.5, color: "#6b7280", borderTop: `2px solid ${theme.subHeaderBorder}`, fontWeight: 500 }}>
+                    Subtotal + 18% GST
+                  </td>
+                  <td style={{ padding: "14px 18px", textAlign: "right", borderTop: `2px solid ${theme.subHeaderBorder}` }}>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: theme.sectionTitle }}>INR {fmtINR(totalGST)}/-</div>
+                  </td>
                 </tr>
               </tbody>
             </table>
-            <div style={{ marginTop: 8, fontSize: 11, color: "#9ca3af", fontStyle: "italic" }}>* GST at 18% is applicable additionally on all taxable line items.</div>
+            </div>
+            <div style={{ marginTop: 7, fontSize: 10.5, color: "#9ca3af", fontStyle: "italic" }}>* GST at 18% is applicable additionally on all taxable line items.</div>
           </PrintSection>
 
           {/* Features — dynamic for enterprise */}
