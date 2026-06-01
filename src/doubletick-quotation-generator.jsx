@@ -1451,7 +1451,7 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
               <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 1.85, marginTop: 2 }}>
                 Office No. 3, 4th Floor, Second Avenue, Connekt Coworks,<br />
                 Subhash Nagar, Andheri East, Mumbai, Maharashtra — 400093<br />
-                kush.ambekar@quicksell.co &nbsp;&nbsp;|&nbsp;&nbsp; +91 79778 14709
+                akshit.rastogi@doubletick.com &nbsp;&nbsp;|&nbsp;&nbsp; +91 7021112807
               </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "center" }}>
