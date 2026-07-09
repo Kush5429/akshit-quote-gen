@@ -87,7 +87,7 @@ function getEnterpriseFeatures(customPrice, billing) {
 // ─── PLANS ────────────────────────────────────────────────────────────────────
 const PLANS = {
   standard: {
-    name: "Standard",
+    name: "Starter",
     subtitle: "Bulk Messaging + Google Sheets",
     monthly: 6840, quarterly: 15480, halfYearly: 30960, yearly: 36000,
     monthlyNote: "Requires management approval",
@@ -98,7 +98,7 @@ const PLANS = {
     subtitle: "Bulk Messaging + Chatbots + Integrations",
     monthly: 9960, quarterly: 21600, halfYearly: 43200, yearly: 50400,
     monthlyNote: "Requires management approval",
-    features: ["Everything in Standard plan", "Team inbox (10 agents free)", "Roles & permissions", "Number masking", "Automated ordering bot", "3rd party integrations", "Developer API", "Agent & Organisation Analytics", "Reports", "30 custom attributes", "5 WhatsApp Groups included"],
+    features: ["Everything in Starter plan", "Team inbox (10 agents free)", "Roles & permissions", "Number masking", "Automated ordering bot", "3rd party integrations", "Developer API", "Agent & Organisation Analytics", "Reports", "30 custom attributes", "5 WhatsApp Groups included"],
   },
   enterprise: {
     name: "Enterprise",
@@ -142,10 +142,37 @@ const ADDON_CATALOG = [
   {
     id: "whatsapp_flows",
     group: "Platform Features",
-    label: "WhatsApp Flows",
-    desc: "Create native WhatsApp forms to capture structured customer data.",
-    plans: ["pro"],
-    monthly: 600, quarterly: 1800, halfYearly: null, yearly: 8496,
+    label: "WhatsApp Flows [Static]",
+    desc: "Collect customer data effortlessly using native WhatsApp forms (static templates).",
+    plans: ["pro", "enterprise", "standard"],
+    monthly: 708, quarterly: 2124, halfYearly: 4248, yearly: 8496,
+    perUnit: false,
+  },
+  {
+    id: "whatsapp_flows_dynamic",
+    group: "Platform Features",
+    label: "WhatsApp Flows [Dynamic]",
+    desc: "Fully dynamic WhatsApp forms with conditional logic and real-time data population.",
+    plans: ["pro", "enterprise", "standard"],
+    monthly: 1000, quarterly: 3000, halfYearly: 6000, yearly: 12000,
+    perUnit: false,
+  },
+  {
+    id: "cx_overview",
+    group: "Platform Features",
+    label: "CX Overview",
+    desc: "360° customer experience dashboard — unified view of all interactions, CSAT scores, and team performance metrics.",
+    plans: ["pro", "enterprise"],
+    monthly: 15000, quarterly: 45000, halfYearly: 90000, yearly: 180000,
+    perUnit: false,
+  },
+  {
+    id: "enterprise_security",
+    group: "Platform Features",
+    label: "Enterprise Security / PII Security",
+    desc: "Advanced data security layer with PII masking, audit logs, role-based data access, and compliance controls.",
+    plans: ["pro", "enterprise"],
+    monthly: 1980, quarterly: 5940, halfYearly: 11880, yearly: 23760,
     perUnit: false,
   },
   {
@@ -154,10 +181,18 @@ const ADDON_CATALOG = [
     label: "Instagram DM Integration",
     desc: "Manage Instagram DMs alongside WhatsApp in a unified inbox. Supports media sharing and real-time replies.",
     plans: ["pro", "enterprise", "standard"],
-    monthly: null, quarterly: null, halfYearly: null, yearly: null,
-    custom: "Custom Pricing",
+    monthly: 2400, quarterly: 7200, halfYearly: 14400, yearly: 28800,
     perUnit: false,
     isInstagram: true,
+  },
+  {
+    id: "wa_calling",
+    group: "Platform Features",
+    label: "WhatsApp Calling",
+    desc: "Incoming WhatsApp calls with automatic recording, call logs, and multi-call handling — all within WhatsApp. Calling cost: doubletick.io/conversation-cost",
+    plans: ["pro", "enterprise"],
+    monthly: 3600, quarterly: 10800, halfYearly: 21600, yearly: 43200,
+    perUnit: false,
   },
   // ── USERS & NUMBERS ────────────────────────────────────────────────────────
   {
@@ -206,29 +241,37 @@ const ADDON_CATALOG = [
   {
     id: "zoho_crm",
     group: "Integrations",
-    label: "Zoho CRM Integration",
-    desc: "Sync leads, contacts, and deals between DoubleTick and Zoho CRM.",
+    label: "Zoho CRM Integration [2-way sync]",
+    desc: "Zoho integration enables seamless 2-way sync of customer data and custom fields. Chat with customers directly from the Zoho dashboard for faster engagement.",
     plans: ["pro", "enterprise", "standard"],
-    monthly: null, quarterly: 5000, halfYearly: null, yearly: 20000,
-    iframeYearly: 25000,
+    monthly: 1800, quarterly: 5400, halfYearly: 10800, yearly: 21600,
+    perUnit: false,
+  },
+  {
+    id: "zoho_crm_iframe",
+    group: "Integrations",
+    label: "Zoho CRM Integration [iFrame + 2-way sync]",
+    desc: "Full Zoho integration with embedded DoubleTick iFrame inside Zoho CRM — seamless 2-way data sync and chat from within the Zoho dashboard.",
+    plans: ["pro", "enterprise", "standard"],
+    monthly: 2500, quarterly: 7500, halfYearly: 15000, yearly: 30000,
     perUnit: false,
   },
   {
     id: "hubspot",
     group: "Integrations",
     label: "HubSpot Integration",
-    desc: "Connect HubSpot contacts and deal pipelines with WhatsApp conversations.",
+    desc: "Automatically send messages on new leads and run drip campaigns to nurture prospects.",
     plans: ["pro", "enterprise", "standard"],
-    monthly: null, quarterly: 5000, halfYearly: null, yearly: 18000,
+    monthly: 1800, quarterly: 5400, halfYearly: 10800, yearly: 21600,
     perUnit: false,
   },
   {
     id: "indiamart",
     group: "Integrations",
     label: "IndiaMart Integration",
-    desc: "Automatically capture and respond to IndiaMart leads via WhatsApp.",
+    desc: "Ensure every IndiaMart lead is promptly engaged by automatically sending a WhatsApp message as soon as the lead arrives.",
     plans: ["pro", "enterprise", "standard"],
-    monthly: null, quarterly: 5000, halfYearly: null, yearly: 18000,
+    monthly: 1800, quarterly: 5400, halfYearly: 10800, yearly: 21600,
     perUnit: false,
   },
   {
@@ -245,9 +288,9 @@ const ADDON_CATALOG = [
     id: "bitrix",
     group: "Integrations",
     label: "Bitrix Integration",
-    desc: "Connect Bitrix24 CRM tasks and contacts with DoubleTick conversations.",
+    desc: "Two-way lead sync and send messages to your leads once the deal is created and closed successfully.",
     plans: ["pro", "enterprise", "standard"],
-    monthly: null, quarterly: 5000, halfYearly: null, yearly: 18000,
+    monthly: 1800, quarterly: 5400, halfYearly: 10800, yearly: 21600,
     perUnit: false,
   },
   {
@@ -266,7 +309,7 @@ const ADDON_CATALOG = [
     label: "Shopify Integration",
     desc: "Connect your Shopify store to send order updates and support via WhatsApp.",
     plans: ["pro", "enterprise", "standard"],
-    monthly: 0, quarterly: 0, halfYearly: 0, yearly: 0,
+    monthly: 1000, quarterly: 3000, halfYearly: 6000, yearly: 12000,
     perUnit: false,
   },
   {
@@ -324,6 +367,15 @@ const ADDON_CATALOG = [
     monthly: 7000, quarterly: 21000, halfYearly: null, yearly: 84000,
     perUnit: false,
   },
+  {
+    id: "additional_support",
+    group: "Platform Extras",
+    label: "Additional Support",
+    desc: "Extended dedicated support package with priority response SLAs and a named support engineer.",
+    plans: ["pro", "enterprise", "standard"],
+    monthly: 5000, quarterly: 15000, halfYearly: 30000, yearly: 60000,
+    perUnit: false,
+  },
   // ── ONE-TIME & USAGE ────────────────────────────────────────────────────────
   {
     id: "bot_building",
@@ -363,6 +415,22 @@ const ADDON_CATALOG = [
     plans: ["pro", "enterprise", "standard"],
     monthly: null, quarterly: null, halfYearly: null, yearly: null,
     custom: "₹2 / daily summary",
+    perUnit: false,
+  },
+  // ── CALLING INFRASTRUCTURE ─────────────────────────────────────────────────
+  {
+    id: "pstn",
+    group: "Calling Infrastructure",
+    label: "PSTN Click-to-Call",
+    desc: "Full outbound calling suite with recordings, transcripts, AI summaries, and agent analytics. Powered by DoubleTick + Tata Tele SIP channels. Tata Tele charges (₹700/channel/month) paid directly to TTBS.",
+    plans: ["pro", "enterprise"],
+    monthly: null, quarterly: null, halfYearly: null, yearly: null,
+    custom: "Per-channel pricing",
+    perChannel: true,
+    dtFeePerChannelPerMonth: 150,
+    aiCallingFeePerMin: 5,
+    callingRatePerMin: 0.40,
+    ttbsFeePerChannelPerMonth: 700,
     perUnit: false,
   },
 ];
@@ -505,6 +573,12 @@ function saveSettings(s) {
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch {}
 }
 
+// ─── DRAFT AUTO-SAVE ──────────────────────────────────────────────────────────
+const DRAFT_KEY = "dt_quotation_draft";
+function saveDraft(data) { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...data, _savedAt: Date.now() })); } catch {} }
+function loadDraft() { try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); } catch { return null; } }
+function clearDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch {} }
+
 // ─── QUOTATION REFERENCE ID ────────────────────────────────────────────────────
 function generateQID() {
   const year = new Date().getFullYear();
@@ -552,6 +626,25 @@ const THEMES = {
     sectionTitle: "#0f1f3d",
     checkColor: "#3b82f6",
   },
+  gold: {
+    headerBg: "linear-gradient(135deg, #78350f 0%, #b45309 50%, #d97706 100%)",
+    headerSolid: "#78350f",
+    headerMid: "#92400e",
+    accent: "#d97706",
+    accentLight: "#fef3c7",
+    subHeaderBg: "#fffbeb",
+    subHeaderBorder: "#fcd34d",
+    subHeaderText: "#92400e",
+    footerBg: "#fefce8",
+    footerBorder: "#d97706",
+    rowEven: "#fffdf7",
+    tableDivider: "#fef3c7",
+    tableHeaderBg: "linear-gradient(135deg, #78350f, #d97706)",
+    catBorder: "#fde68a",
+    sectionBorder: "#fcd34d",
+    sectionTitle: "#78350f",
+    checkColor: "#d97706",
+  },
 };
 
 // ─── TEMPLATE STORAGE ──────────────────────────────────────────────────────────
@@ -579,7 +672,19 @@ async function generateROIWithGroq({ clientName, companyName, planName, billing,
   // Pull out key features that hint at their use case
   const featureHighlights = features.slice(0, 8).join(", ");
 
-  const prompt = `You are a senior B2B ROI analyst writing a personalised Return on Investment page for a sales quotation.
+  const prompt = `You are a senior B2B ROI analyst writing a personalised Return on Investment page for a sales quotation from DoubleTick — India's leading WhatsApp Business API platform.
+
+DOUBLETICK PLATFORM CONTEXT (use this to write accurate, specific benefits):
+DoubleTick serves 1000+ brands across real estate, travel, finance, education, healthcare, and legal sectors.
+Key platform capabilities:
+- Multi-WABA & multi-agent: entire teams share one WhatsApp number; multiple numbers managed in one dashboard
+- Broadcasting: reach thousands of opted-in contacts with approved template campaigns
+- AI Agents & Chatbots: 24/7 lead qualification, FAQ handling, and automated workflows
+- AI Calling: automated voice outreach with WhatsApp follow-ups
+- CTWA (Click-to-WhatsApp Ads): direct Facebook/Instagram ad-to-WhatsApp pipeline
+- Frictionless Messaging: customers respond on WhatsApp — no app download, no friction
+- Deep CRM integrations: Zoho, HubSpot, Bitrix, IndiaMart sync
+Proven outcomes at brands like MakeMyTrip, Piramal Finance, Hiranandani, Birla Brainiac, and Lodha.
 
 CLIENT CONTEXT:
 - Company: ${companyName} (contact: ${clientName})
@@ -592,28 +697,28 @@ CLIENT CONTEXT:
 ${scopeContext}
 
 TASK:
-Write a highly specific, numbers-driven ROI summary for ${companyName}. Use their actual scope and add-ons to derive realistic estimates. Do NOT write generic WhatsApp CRM benefits — write benefits specific to what ${companyName} is actually getting.
+Write a highly specific, numbers-driven ROI summary for ${companyName}. Derive realistic estimates from their scope, plan, and selected add-ons. Reference DoubleTick capabilities accurately. Do NOT write generic WhatsApp CRM benefits — every point must be specific to what ${companyName} is actually getting.
 
 OUTPUT FORMAT (follow exactly):
 For ${companyName}:
-[1 punchy opening line about their specific situation, no bullet point]
+[1 punchy opening line about their specific situation and what DoubleTick unlocks for them — no bullet point]
 
 Efficiency Gains:
-[3-4 bullets with % improvements specific to their use case and add-ons]
+[3-4 bullets with % improvements derived from their scope and features. Reference specific features like broadcasting, chatbot, multi-agent, CTWA where applicable.]
 
 Cost Savings:
-[3 bullets with ₹ monthly estimates, derived from their investment and team size context]
+[3 bullets with ₹ monthly estimates. Derive from their investment, team context, and the cost of manual processes they're replacing.]
 
 Business Impact:
-[3 bullets on revenue/growth outcomes specific to their industry/scope]
+[3 bullets on revenue/growth outcomes specific to their industry and scope. Reference real outcomes from similar DoubleTick customers where relevant.]
 
 STRICT RULES:
 - No emoji, no markdown, no asterisks
 - Section headers end with colon only
 - Plain text bullets — no dashes, no numbers
-- All numbers must be ranges (e.g. 40-60%, ₹12,000-18,000/month)
+- All numbers must be ranges (e.g. 40–60%, ₹12,000–18,000/month)
 - Reference ${companyName} by name at least twice in the bullets
-- Reference specific features they selected (e.g. CTWA, chatbot, CAPI, SLA) where relevant
+- Reference specific add-ons or features they selected where relevant
 - Start directly with "For ${companyName}:" — no preamble`;
 
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -1042,7 +1147,7 @@ export default function App() {
   const [addons, setAddons] = useState([]);
   const [iframeSelections, setIframeSelections] = useState({});
   const [customAddonsList, setCustomAddonsList] = useState([]);
-  const [newCustomAddon, setNewCustomAddon] = useState({ label: "", price: "", billing: "custom" });
+  const [newCustomAddon, setNewCustomAddon] = useState({ label: "", desc: "", price: "", billing: "custom" });
   const [scope, setScope] = useState("");
   const [discount, setDiscount] = useState(0);
   const [preview, setPreview] = useState(false);
@@ -1072,6 +1177,17 @@ export default function App() {
   const [quoteLog, setQuoteLog] = useState(loadQuoteLog);
   const [showQuoteLog, setShowQuoteLog] = useState(false);
   const [appPage, setAppPage] = useState("builder"); // "builder" | "dashboard"
+
+  // ── Responsive breakpoints ─────────────────────────────────────────────────
+  const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1280);
+  useEffect(() => {
+    const onResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  const isMobile  = windowWidth < 768;   // single-column, no preview panel
+  const isTablet  = windowWidth < 1100;  // narrow preview panel
+  const isNarrow  = windowWidth < 900;   // stack scope+preview grid
   const [logFilter, setLogFilter] = useState("all"); // "all" | "pending" | "won" | "lost"
   const [lostReasonInput, setLostReasonInput] = useState({});
   const [confirmDelete, setConfirmDelete] = useState(null); // qid to confirm
@@ -1090,13 +1206,51 @@ export default function App() {
     { week: "Week 3", title: "Go-Live & Training", desc: "Team training completed, first broadcasts sent, live support active" },
     { week: "Week 4", title: "Optimisation", desc: "Performance review, campaign tuning, CSM handover completed" },
   ]);
+  const [pstnChannels, setPstnChannels] = useState(1);
+  const [pstnAICalling, setPstnAICalling] = useState(false);
+  const [draftBanner, setDraftBanner] = useState(() => {
+    const d = loadDraft();
+    return d && d._savedAt && (Date.now() - d._savedAt) < 7 * 24 * 60 * 60 * 1000 ? d : null;
+  });
   const logoRef = useRef();
   const docRef = useRef();
+
+  // ── Auto-save draft every 30 seconds ──────────────────────────────────────
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (!clientName && !companyName) return; // nothing meaningful to save
+      saveDraft({ plan, billing, addons, iframeSelections, discount, addonDiscounts, addonQty,
+        enterpriseCustomPrice, enterpriseAIBots, customAddonsList, customFeatures,
+        scope, includeROI, roiText, includeTimeline, includeCaseStudy, caseStudyText,
+        expiryDate, pdfTheme, clientName, companyName, email, pstnChannels, pstnAICalling });
+    }, 30000);
+    return () => clearInterval(id);
+  }, [plan, billing, addons, iframeSelections, discount, addonDiscounts, addonQty,
+      enterpriseCustomPrice, enterpriseAIBots, customAddonsList, customFeatures,
+      scope, includeROI, roiText, includeTimeline, includeCaseStudy, caseStudyText,
+      expiryDate, pdfTheme, clientName, companyName, email, pstnChannels, pstnAICalling]);
+
+  const restoreDraft = (d) => {
+    setPlan(d.plan ?? "pro"); setBilling(d.billing ?? "quarterly");
+    setAddons(d.addons || []); setIframeSelections(d.iframeSelections || {});
+    setDiscount(d.discount || 0); setAddonDiscounts(d.addonDiscounts || {});
+    setAddonQty(d.addonQty || {}); setEnterpriseCustomPrice(d.enterpriseCustomPrice || "");
+    setEnterpriseAIBots(d.enterpriseAIBots || false); setCustomAddonsList(d.customAddonsList || []);
+    setCustomFeatures(d.customFeatures ?? null); setScope(d.scope || "");
+    setIncludeROI(d.includeROI || false); setRoiText(d.roiText || "");
+    setIncludeTimeline(d.includeTimeline || false); setIncludeCaseStudy(d.includeCaseStudy || false);
+    setCaseStudyText(d.caseStudyText || ""); setExpiryDate(d.expiryDate || "");
+    setPdfTheme(d.pdfTheme || "green"); setClientName(d.clientName || "");
+    setCompanyName(d.companyName || ""); setEmail(d.email || "");
+    setPstnChannels(d.pstnChannels || 1); setPstnAICalling(d.pstnAICalling || false);
+    setDraftBanner(null);
+    clearDraft();
+  };
 
   const planData = PLANS[plan];
   const isEnterpriseCustom = plan === "enterprise";
   // effectiveBilling = billing (same)
-  const effectiveBillingLabel = { monthly: "Monthly", quarterly: "Quarterly", halfYearly: "Half-Yearly", yearly: "Yearly" }[billing] ?? "Quarterly";
+  const effectiveBillingLabel = { monthly: "Monthly", quarterly: "Quarterly", halfYearly: "Bi-Annual", yearly: "Yearly" }[billing] ?? "Quarterly";
 
   // Auto-computed features (recalculate when price/billing changes)
   const autoFeatures = isEnterpriseCustom
@@ -1245,6 +1399,27 @@ Thank you for considering DoubleTick! 🙏`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
+  // WhatsApp share from builder preview
+  const handleBuilderWhatsAppShare = () => {
+    const expiryStr = expiryDate
+      ? `\nValid until: ${new Date(expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`
+      : "";
+    const discountStr = discount > 0 ? `\nDiscount: ${discount}% applied` : "";
+    const msg = `Hi ${clientName || "there"},
+
+Please find your DoubleTick quotation details below:
+
+📋 *Ref:* ${qid}
+🏢 *Client:* ${companyName || "—"}
+📦 *Plan:* DoubleTick ${planData.name} — ${effectiveBillingLabel}
+💰 *Total:* ₹${totalGST.toLocaleString("en-IN")} (incl. GST)${discountStr}${expiryStr}
+
+The full quotation PDF has been shared separately. To proceed or for any queries, please reply to this message.
+
+Thank you for considering DoubleTick! 🙏`;
+    window.open(`https://wa.me/${email && email.match(/^\d{10,}$/) ? "91" + email : ""}?text=${encodeURIComponent(msg)}`, "_blank");
+  };
+
   // Save current quote to log
   const saveToLog = () => {
     const entry = {
@@ -1283,39 +1458,82 @@ Thank you for considering DoubleTick! 🙏`;
   // Case study generation
   const handleGenerateCaseStudy = async () => {
     setCaseStudyLoading(true);
-    // Rotate through different client pairs on each call to force variety
-    const ALL_CLIENTS = [
-      ["GRT Jewellers", "Raheja Developers"],
-      ["Sabyasachi", "Tupperware"],
-      ["BVC Logistics", "Malabar Diamonds"],
-      ["ICRA", "Birla Brainiacs"],
-      ["GRT Jewellers", "BVC Logistics"],
-      ["Tupperware", "Raheja Developers"],
-      ["Malabar Diamonds", "Sabyasachi"],
+
+    // Real DoubleTick customers organized by industry
+    const CLIENT_POOL = [
+      { name: "MakeMyTrip", industry: "Travel & Tourism", useCase: "high-volume customer support, automated booking confirmations, post-trip engagement, and multi-agent WhatsApp handling across millions of travelers" },
+      { name: "Akbar Travels", industry: "Travel & Tourism (Dubai)", useCase: "real-time booking updates, itinerary sharing, multi-WABA setup for UAE and India offices, and multi-agent support" },
+      { name: "Hiranandani", industry: "Real Estate", useCase: "lead qualification chatbots, automated site-visit scheduling, and nurturing home-buyers through the sales funnel via WhatsApp" },
+      { name: "Lodha", industry: "Real Estate", useCase: "broadcasting project launches and inventory updates to thousands of prospects, automated site-visit reminders, and broker engagement workflows" },
+      { name: "M3M India", industry: "Real Estate", useCase: "multi-agent lead handling, CTWA (Click-to-WhatsApp) ad campaigns, and instant response automation for high-intent property enquiries" },
+      { name: "Tiger Properties", industry: "Real Estate (Dubai)", useCase: "WhatsApp-first sales workflows for international property buyers, investor communication across UAE, and frictionless cross-border engagement" },
+      { name: "Piramal Finance", industry: "Financial Services / NBFC", useCase: "loan application status updates, EMI payment reminders via WhatsApp, and customer onboarding automation at scale" },
+      { name: "ASK Wealth", industry: "Wealth Management", useCase: "relationship manager communications, investment portfolio updates, and high-net-worth client engagement via dedicated WhatsApp numbers" },
+      { name: "Single Debt", industry: "Debt Resolution / Fintech", useCase: "debt repayment reminders, settlement negotiation chatbots, and compliant bulk outreach to borrowers via WhatsApp broadcasting" },
+      { name: "Birla Brainiac", industry: "EdTech / Education", useCase: "student enrollment chatbots, fee reminder automation, parent-teacher communication, and course update broadcasts to thousands of students" },
+      { name: "Jaro Education", industry: "EdTech / Higher Education", useCase: "admission inquiry automation, enrollment campaigns, batch scheduling notifications, and student engagement through targeted WhatsApp campaigns" },
+      { name: "Rimigo", industry: "Consumer Goods / D2C (Shark Tank India)", useCase: "customer order updates, post-purchase engagement, retention campaigns via WhatsApp broadcasts, and rapid response to customer queries using chatbots" },
+      { name: "Ideal Academy", industry: "Education", useCase: "student onboarding workflows, fee collection reminders, and multi-agent support for student queries via a single WhatsApp number" },
+      { name: "Legal Capital", industry: "Legal Services / Fintech", useCase: "client case status updates, document collection automation, compliance notifications, and case escalation alerts via WhatsApp" },
+      { name: "Evolus", industry: "Healthcare / Aesthetics", useCase: "appointment reminders, post-treatment follow-ups, patient reactivation campaigns, and clinic-wide communication automation" },
     ];
-    const pair = ALL_CLIENTS[Math.floor(Math.random() * ALL_CLIENTS.length)];
+
+    // DoubleTick platform capabilities for the AI to reference accurately
+    const DT_USPS = `DoubleTick platform capabilities (reference these for accurate solution descriptions):
+- Multi-WABA: manage multiple WhatsApp Business numbers under one dashboard
+- Multi-agent, single-number: entire team handles one WhatsApp number simultaneously
+- Broadcasting: send bulk messages to thousands of opted-in contacts via approved templates
+- AI Agents & Chatbots: 24/7 automated response flows, FAQ bots, lead qualification chatbots
+- AI Calling: automated voice outreach integrated with WhatsApp follow-up sequences
+- CTWA (Click-to-WhatsApp Ads): Facebook/Instagram ads that open WhatsApp directly
+- Frictionless Messaging: zero-friction conversations — no app download required for end customers
+- CRM Integrations: Zoho, HubSpot, Bitrix, IndiaMart, and custom API connections`;
+
+    // Pick 2 clients from different industries — bias toward scope relevance
+    const scopeLower = (scope || "").toLowerCase();
+    const scored = CLIENT_POOL.map(c => {
+      const combined = (c.industry + " " + c.useCase).toLowerCase();
+      let score = Math.random(); // base randomness for variety
+      if ((scopeLower.includes("real estate") || scopeLower.includes("property")) && combined.includes("real estate")) score += 4;
+      if ((scopeLower.includes("travel") || scopeLower.includes("tour")) && combined.includes("travel")) score += 4;
+      if ((scopeLower.includes("finance") || scopeLower.includes("loan") || scopeLower.includes("wealth") || scopeLower.includes("bank")) && (combined.includes("financ") || combined.includes("wealth") || combined.includes("debt"))) score += 4;
+      if ((scopeLower.includes("school") || scopeLower.includes("education") || scopeLower.includes("edtech") || scopeLower.includes("academy")) && (combined.includes("edtech") || combined.includes("education"))) score += 4;
+      if ((scopeLower.includes("legal") || scopeLower.includes("law")) && combined.includes("legal")) score += 4;
+      if ((scopeLower.includes("health") || scopeLower.includes("clinic") || scopeLower.includes("hospital")) && combined.includes("health")) score += 4;
+      return { ...c, score };
+    }).sort((a, b) => b.score - a.score);
+
+    const first = scored[0];
+    const second = scored.find(c => c.industry !== first.industry) ?? scored[1];
+    const pair = [first, second];
+
     try {
-      const prompt = `You are a B2B SaaS sales expert at DoubleTick (WhatsApp CRM).
-Write 2 different client case studies for a proposal for ${companyName} (scope context: ${scope || "general business"}).
+      const prompt = `You are a B2B SaaS sales expert at DoubleTick — India's leading WhatsApp Business API platform serving 1000+ brands across real estate, travel, finance, education, healthcare, and legal industries.
 
-YOU MUST use EXACTLY these 2 clients — do not substitute: ${pair[0]} and ${pair[1]}.
+Write 2 client case studies for a proposal being sent to ${companyName} (scope: ${scope || "general business automation via WhatsApp"}).
 
-Write each case study fresh and specific to that client's actual industry. Do not reuse phrasing from previous outputs.
+${DT_USPS}
 
-STRICT OUTPUT FORMAT — follow exactly:
-${pair[0]}:
+YOU MUST use EXACTLY these 2 clients — do not substitute: ${pair[0].name} and ${pair[1].name}.
+
+Context to guide accuracy (do not copy verbatim — write naturally and specifically):
+- ${pair[0].name} (${pair[0].industry}): ${pair[0].useCase}
+- ${pair[1].name} (${pair[1].industry}): ${pair[1].useCase}
+
+STRICT OUTPUT FORMAT — follow exactly, no deviations:
+${pair[0].name}:
 Industry: [their actual industry]
-Challenge: [specific problem they had before DoubleTick — be specific, include a pain point]
-Solution: [exactly what DoubleTick feature or workflow solved it]
-Result: [specific measurable outcome — use a %, ₹ figure, or time metric]
+Challenge: [specific problem before DoubleTick — 1 sentence, concrete pain point with a number if possible]
+Solution: [exact DoubleTick feature(s) used — name the feature explicitly, e.g. "multi-agent inbox", "broadcasting", "CTWA campaigns"]
+Result: [measurable outcome with a metric: %, ₹ figure, or time saved. E.g. "Reduced lead response time by 80%, from 6 hours to under 20 minutes."]
 
-${pair[1]}:
+${pair[1].name}:
 Industry: [their actual industry]
-Challenge: [specific problem they had before DoubleTick — be specific, include a pain point]
-Solution: [exactly what DoubleTick feature or workflow solved it]
-Result: [specific measurable outcome — use a %, ₹ figure, or time metric]
+Challenge: [specific problem before DoubleTick — 1 sentence, concrete pain point]
+Solution: [exact DoubleTick feature(s) used — name the feature explicitly]
+Result: [measurable outcome with a metric]
 
-Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each field on its own line. Blank line between the two case studies.`;
+Rules: No preamble. No closing line. No markdown. No asterisks. Start directly with "${pair[0].name}:". Each field on its own line. One blank line between the two case studies.`;
 
       const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
@@ -1323,8 +1541,8 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
         body: JSON.stringify({
           model: "llama-3.3-70b-versatile",
           messages: [{ role: "user", content: prompt }],
-          temperature: 0.85,
-          max_tokens: 600,
+          temperature: 0.8,
+          max_tokens: 700,
           top_p: 0.95,
         }),
       });
@@ -1362,6 +1580,7 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
   const getQty = (id) => addonQty[id] || 1;
 
   const getAddonLinePrice = (a) => {
+    if (a.id === "pstn") return a.dtFeePerChannelPerMonth * pstnChannels;
     if (a.custom) return null;
     const unit = getAddonUnitPrice(a, plan, billing);
     if (unit == null) return null;
@@ -1440,7 +1659,7 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
     <div ref={docRef} style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: "#1e2d3d", background: "#fff", maxWidth: 860, margin: "0 auto" }}>
 
       {/* PAGE 1 */}
-      <div style={{ breakAfter: "page" }}>
+      <div>
         <div style={{ background: theme.headerBg, padding: "38px 56px 30px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
@@ -1482,23 +1701,31 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
             {expiryDate && <div style={{ marginTop: 4, fontSize: 11, color: "#dc2626", fontWeight: 600 }}>Valid until {new Date(expiryDate).toLocaleDateString("en-IN", {day:"numeric",month:"long",year:"numeric"})}</div>}
           </div>
         </div>
-        <div style={{ padding: "38px 56px" }}>
-          <PrintSection title="Company Overview" theme={theme}>
-            <p style={{ color: "#374151", lineHeight: 1.9, margin: 0, fontSize: 13 }}>QuickSell is a conversational commerce company empowering global brands with scalable personal commerce and relationship-led sales on WhatsApp. Started in 2017 with a vision of enabling global brands to win more customers using simple yet robust technology on mobile, today we have over 7,000+ customers across 100+ countries using our technology to grow digitally.</p>
-          </PrintSection>
-          <PrintSection title="About DoubleTick" theme={theme}>
-            <p style={{ color: "#374151", lineHeight: 1.9, marginBottom: 12, fontSize: 13 }}>DoubleTick is a mobile-first conversational CRM built on top of WhatsApp Business API to unlock marketing and sales capabilities of WhatsApp with top-notch features such as a cloud-based team inbox, unlimited broadcast and bulk messaging, real-time broadcast analytics, dynamic cataloging, chatbot, commerce BOT and many more.</p>
-            <p style={{ color: "#374151", lineHeight: 1.9, marginBottom: 12, fontSize: 13 }}>Some of the brands powered by DoubleTick include GRT Jewellers, Raheja Developers, Sabyasachi, Tarun Tahiliani, ICRA, BVC Logistics, Tupperware, Birla Brainiacs KGK Group, Walking Tree, CKC Group, Malabar Diamonds and Gold, Emerald India, Prima Art, Siroya, SabyaSachi, etc. Backed by investors from Silicon Valley, Info Edge Ventures and BeeNext Asia, we are headquartered in Mumbai, India.</p>
-            <p style={{ color: "#374151", lineHeight: 1.9, marginBottom: 16, fontSize: 13 }}>DoubleTick.io is EU GDPR compliant, ISO 27001 certified, and a Meta Business Partner, powered by the Official WhatsApp Business API. Recognized as Meta Emerging Technology Partner of the Year 2025 and trusted by businesses globally.</p>
-            <div style={{ padding: "14px 18px", background: "#f0fdf8", borderRadius: 9, border: "1px solid #a7f0c8", fontSize: 12 }}>
-              <div style={{ fontWeight: 600, color: "#0b5235", marginBottom: 8 }}>Customer Reviews</div>
-              <div style={{ color: "#2d6a4f", lineHeight: 2 }}>
-                G2: https://www.g2.com/products/doubletick-io/reviews<br />
-                App Store: https://apps.apple.com/in/app/doubletick/id1662977073<br />
-                Play Store: https://play.google.com/store/apps/details?id=io.doubletick.mobile.crm
+        <div style={{ padding: "32px 56px 28px" }}>
+          {/* Company Overview */}
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 16.5, fontWeight: 600, color: theme.sectionTitle, paddingBottom: 7, borderBottom: `1.5px solid ${theme.sectionBorder}`, marginBottom: 12 }}>Company Overview</div>
+            <p style={{ color: "#374151", lineHeight: 1.85, margin: "0 0 8px", fontSize: 13 }}>QuickSell is a conversational commerce company empowering global brands with scalable personal commerce and relationship-led sales on WhatsApp. Started in 2017 with a vision of enabling global brands to win more customers using simple yet robust technology on mobile, today we have over 7,000+ customers across 100+ countries using our technology to grow digitally.</p>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5.5" stroke="#5aac88" strokeWidth="1.1"/><path d="M4.5 4l4 2-4 2V4z" fill="#5aac88"/></svg>
+              <a href="https://drive.google.com/file/d/1WGYIn6KKjoDq0oE7tBmZw1GaRt6_eEzw/view" style={{ fontSize: 11.5, color: "#5aac88", textDecoration: "none", fontWeight: 500, borderBottom: "1px solid rgba(90,172,136,0.35)" }}>Watch a short product demo</a>
+              <span style={{ fontSize: 11, color: "#9ca3af" }}>· 2 min overview</span>
+            </div>
+          </div>
+
+          {/* About DoubleTick */}
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 16.5, fontWeight: 600, color: theme.sectionTitle, paddingBottom: 7, borderBottom: `1.5px solid ${theme.sectionBorder}`, marginBottom: 12 }}>About DoubleTick</div>
+            <p style={{ color: "#374151", lineHeight: 1.85, marginBottom: 10, fontSize: 13 }}>DoubleTick is a mobile-first conversational CRM built on top of WhatsApp Business API to unlock marketing and sales capabilities of WhatsApp — cloud-based team inbox, unlimited broadcasts, real-time analytics, dynamic cataloging, chatbot, commerce BOT and AI agents.</p>
+            <p style={{ color: "#374151", lineHeight: 1.85, marginBottom: 10, fontSize: 13 }}>Trusted by MakeMyTrip, Piramal Finance, Hiranandani, Lodha, Birla Brainiac, Akbar Travels, and 1,000+ brands globally. Backed by Info Edge Ventures, BeeNext Asia, and Silicon Valley investors. Headquartered in Mumbai, India.</p>
+            <p style={{ color: "#374151", lineHeight: 1.85, marginBottom: 14, fontSize: 13 }}>DoubleTick.io is <strong>EU GDPR compliant</strong>, <strong>ISO 27001 certified</strong>, a <strong>Meta Business Partner</strong>, and was recognized as <strong>Meta Emerging Technology Partner of the Year 2025</strong>.</p>
+            <div style={{ padding: "12px 16px", background: "#f0fdf8", borderRadius: 8, border: "1px solid #a7f0c8", fontSize: 12 }}>
+              <div style={{ fontWeight: 600, color: "#0b5235", marginBottom: 6, fontSize: 11.5 }}>Customer Reviews</div>
+              <div style={{ color: "#2d6a4f", lineHeight: 1.9, fontSize: 11.5 }}>
+                G2: https://www.g2.com/products/doubletick-io/reviews &nbsp;·&nbsp; App Store: https://apps.apple.com/in/app/doubletick/id1662977073 &nbsp;·&nbsp; Play Store: https://play.google.com/store/apps/details?id=io.doubletick.mobile.crm
               </div>
             </div>
-          </PrintSection>
+          </div>
         </div>
         <PrintFooter theme={theme} />
       </div>
@@ -1541,8 +1768,8 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
                       ) : null;
                     })()}
                   </td>
-                  <td style={{ ...pTdr, padding: "14px 18px" }}>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: "#111827" }}>INR {fmtINR(planPrice)}/-</div>
+                  <td style={{ ...pTdr, padding: "14px 18px", whiteSpace: "nowrap" }}>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: "#111827", whiteSpace: "nowrap" }}>INR {fmtINR(planPrice)}/-</div>
                   </td>
                 </tr>
 
@@ -1587,15 +1814,22 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
                         {a.desc && <div style={{ fontSize: 10.5, color: "#9ca3af", fontStyle: "italic", lineHeight: 1.5, marginTop: 1 }}>{a.desc}</div>}
                         {a.perUnit && getQty(a.id) > 1 && <div style={{ fontSize: 10.5, color: "#9ca3af", marginTop: 1 }}>{getQty(a.id)} × {a.unitLabel} @ ₹{fmtINR(getAddonUnitPrice(a, plan, billing))}/{a.unitLabel}</div>}
                       </td>
-                      <td style={{ ...pTdr, padding: "10px 18px", verticalAlign: "middle" }}>
+                      <td style={{ ...pTdr, padding: "10px 18px", verticalAlign: "middle", whiteSpace: "nowrap" }}>
                         {isCustomAddon ? (
-                          <div style={{ fontSize: 12.5, fontWeight: 600, color: theme.accent, fontStyle: "italic" }}>{a.custom}</div>
+                          <div>
+                            <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", fontStyle: "italic", textAlign: "right" }}>{a.custom}</div>
+                            {a.id === "pstn" && pstnChannels > 0 && (
+                              <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 2, textAlign: "right" }}>
+                                ₹{fmtINR(a.dtFeePerChannelPerMonth * pstnChannels)}/mo DT fee · {pstnChannels} channel{pstnChannels > 1 ? "s" : ""}
+                              </div>
+                            )}
+                          </div>
                         ) : (
                           <>
                             {disc > 0 && linePrice != null && (
                               <div style={{ fontSize: 10.5, color: "#9ca3af", textDecoration: "line-through", textAlign: "right", marginBottom: 2 }}>INR {fmtINR(linePrice)}/-</div>
                             )}
-                            <div style={{ fontSize: 14, fontWeight: 700, color: disc > 0 ? "#16a34a" : "#111827" }}>INR {fmtINR(discountedLine ?? linePrice)}/-</div>
+                            <div style={{ fontSize: 15, fontWeight: 800, color: disc > 0 ? "#16a34a" : "#111827" }}>INR {fmtINR(discountedLine ?? linePrice)}/-</div>
                             <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 1 }}>{BILLING_LABELS[billing]}</div>
                           </>
                         )}
@@ -1610,10 +1844,15 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
                     <td style={{ ...pTdc, padding: "13px 16px", color: "#9ca3af", fontSize: 12 }}>{numericAddons.length + customAddons.length + i + 2}</td>
                     <td style={{ ...pTdl, padding: "13px 18px" }}>
                       <div style={{ fontWeight: 600, color: "#374151", fontSize: 13 }}>{ca.label}</div>
+                      {ca.desc && <div style={{ fontSize: 11.5, color: "#6b7280", marginTop: 3, lineHeight: 1.5, fontStyle: "italic" }}>{ca.desc}</div>}
                     </td>
                     <td style={{ ...pTdr, padding: "13px 18px" }}>
-                      <div style={{ fontSize: 13.5, fontWeight: 700, color: theme.accent, fontStyle: "italic" }}>{ca.price ? `INR ${Number(ca.price).toLocaleString("en-IN")}/-` : "—"}</div>
-                      {ca.billing !== "custom" && <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 1 }}>{ca.billing}</div>}
+                      <div style={{ fontSize: 15, fontWeight: 800, color: "#111827" }}>{ca.price ? `INR ${Number(ca.price).toLocaleString("en-IN")}/-` : "—"}</div>
+                      {ca.billing && ca.billing !== "custom" && (
+                        <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 1 }}>
+                          {({ monthly: "per month", quarterly: "per 3 months", halfYearly: "per 6 months", yearly: "per year" }[ca.billing]) || ca.billing}
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -1626,8 +1865,8 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
                   <td colSpan={2} style={{ padding: "14px 18px", textAlign: "right", fontSize: 12.5, color: "#6b7280", borderTop: `2px solid ${theme.subHeaderBorder}`, fontWeight: 500 }}>
                     Subtotal + 18% GST
                   </td>
-                  <td style={{ padding: "14px 18px", textAlign: "right", borderTop: `2px solid ${theme.subHeaderBorder}` }}>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: theme.sectionTitle }}>INR {fmtINR(totalGST)}/-</div>
+                  <td style={{ padding: "14px 18px", textAlign: "right", borderTop: `2px solid ${theme.subHeaderBorder}`, whiteSpace: "nowrap" }}>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: theme.sectionTitle, whiteSpace: "nowrap" }}>INR {fmtINR(totalGST)}/-</div>
                   </td>
                 </tr>
               </tbody>
@@ -1637,10 +1876,11 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
           </PrintSection>
 
           {/* Features — dynamic for enterprise */}
-          <PrintSection title={`DoubleTick ${planData.name} Plan — Included Features`} theme={theme}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 30px", marginBottom: 14 }}>
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 16.5, fontWeight: 600, color: theme.sectionTitle, paddingBottom: 7, borderBottom: `1.5px solid ${theme.sectionBorder}`, marginBottom: 14 }}>{`DoubleTick ${planData.name} Plan — Included Features`}</div>
+            <div style={{ columns: 2, columnGap: 30, marginBottom: 14 }}>
               {enterpriseFeatures.map((f, i) => (
-                <div key={i} style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 12.5, color: "#374151", lineHeight: 1.65 }}>
+                <div key={i} style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 12.5, color: "#374151", lineHeight: 1.65, breakInside: "avoid", marginBottom: 2 }}>
                   <span style={{ color: theme.accent, flexShrink: 0, marginTop: 3, fontSize: 10 }}>▶</span>
                   <span>{f}</span>
                 </div>
@@ -1655,7 +1895,7 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
               )}
               {" "}Features not listed here are not part of the base plan and may be available as separate add-ons.
             </div>
-          </PrintSection>
+          </div>
 
           <div style={{ padding: "16px 20px", background: "#fffbeb", borderRadius: 9, border: "1px solid #fcd34d", fontSize: 12.5 }}>
             <div style={{ fontWeight: 700, color: "#78350f", marginBottom: 10, fontSize: 12, letterSpacing: 0.5, textTransform: "uppercase" }}>Important Notes</div>
@@ -1675,20 +1915,19 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
         </div>
       </div>
 
-      {/* PAGE 3 — SCOPE OF WORK */}
-      <div style={{ breakBefore: "page" }}>
-        <PrintPageHeader title="Support & Onboarding" sub="Scope of Work" clientLogo={clientLogo} companyName={companyName} theme={theme} />
-        <div style={{ padding: "24px 56px" }}>
-          {scope && (
+      {/* PAGE 3 — SCOPE OF WORK — only if scope content exists */}
+      {scope && scope.trim() && (
+        <div style={{ breakBefore: "page" }}>
+          <PrintPageHeader title="Support & Onboarding" sub="Scope of Work" clientLogo={clientLogo} companyName={companyName} theme={theme} />
+          <div style={{ padding: "24px 56px" }}>
             <div style={{ marginBottom: 22 }}>
-              <div style={{ marginBottom: 10 }} />
               <div style={{ marginTop: 4 }}>
                 {renderScopeLines(scope, theme)}
               </div>
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* PAGE ROI — optional */}
       {includeROI && roiText && (
@@ -1855,15 +2094,15 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
               <tbody>
                 {[
                   ["Payment Terms", "Full payment is due upfront, prior to account activation."],
-                  ["Taxation", "Goods and Services Tax (GST) at 18% is applicable in addition to all listed prices."],
-                  ["Purchase Order", `Upon acceptance of this proposal, ${teamName} shall issue a Purchase Order (PO) to formalise the commercial agreement.`],
-                  ["Advance Payment", `${teamName} agrees to remit payment in advance in accordance with the agreed commercial terms and conditions.`],
-                  ["Billing Cycle", `${effectiveBillingLabel} — This proposal is structured on a ${effectiveBillingLabel.toLowerCase()} billing basis${effectiveBillingLabel === "Monthly" ? " (subject to management approval)" : ""}. Renewal terms shall be mutually agreed upon prior to the next cycle.`],
+                  ["Taxation", "GST at 18% is applicable in addition to all listed prices."],
+                  ["Purchase Order", `Upon acceptance, ${teamName} shall issue a Purchase Order (PO) to formalise the commercial agreement.`],
+                  ["Advance Payment", `${teamName} agrees to remit payment in advance per agreed commercial terms.`],
+                  ["Billing Cycle", `${effectiveBillingLabel}${effectiveBillingLabel === "Monthly" ? " (subject to management approval)" : ""}. Renewal terms shall be mutually agreed upon prior to the next cycle.`],
                   ["Refund Policy", "Please refer to our refund and cancellation policy at: https://doubletick.io/refund-and-cancellations"],
                 ].map(([label, val], i) => (
                   <tr key={label} style={{ background: i % 2 === 0 ? "#f9fafb" : "#fff", borderBottom: "1px solid #e5e7eb" }}>
-                    <td style={{ padding: "11px 16px", fontWeight: 600, color: "#111827", width: 190, verticalAlign: "top", fontSize: 12.5 }}>{label}</td>
-                    <td style={{ padding: "11px 16px", color: "#374151", lineHeight: 1.75, fontSize: 12.5 }}>
+                    <td style={{ padding: "8px 14px", fontWeight: 600, color: "#111827", width: 175, verticalAlign: "top", fontSize: 12 }}>{label}</td>
+                    <td style={{ padding: "8px 14px", color: "#374151", lineHeight: 1.6, fontSize: 12 }}>
                       {label === "Refund Policy" ? (
                         <>Please refer to our refund and cancellation policy at: <a href="https://doubletick.io/refund-and-cancellations" style={{ color: theme.accent, textDecoration: "underline" }}>doubletick.io/refund-and-cancellations</a></>
                       ) : val}
@@ -1874,12 +2113,12 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
             </table>
           </PrintSection>
           <PrintSection title="WhatsApp API Message Costs" theme={theme}>
-            <p style={{ color: "#374151", lineHeight: 1.9, marginBottom: 14, fontSize: 13 }}>WhatsApp message costs are charged separately by Meta and are effective as of <strong>January 1, 2026</strong>. These are prepaid — the client must recharge the DoubleTick Wallet directly. Rates are subject to change per Meta's pricing policy. No setup fees are applicable.</p>
+            <p style={{ color: "#374151", lineHeight: 1.7, marginBottom: 10, fontSize: 12 }}>WhatsApp message costs are charged separately by Meta effective <strong>January 1, 2026</strong>. These are prepaid — the client recharges the DoubleTick Wallet directly. Rates are subject to change per Meta's pricing policy. No setup fees apply.</p>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: theme.headerSolid, color: "#fff" }}>
-                  <th style={{ padding: "10px 16px", textAlign: "left", fontWeight: 600, fontSize: 12 }}>Message Type</th>
-                  <th style={{ padding: "10px 16px", textAlign: "right", fontWeight: 600, fontSize: 12 }}>Rate (per delivered message)</th>
+                  <th style={{ padding: "8px 14px", textAlign: "left", fontWeight: 600, fontSize: 11.5 }}>Message Type</th>
+                  <th style={{ padding: "8px 14px", textAlign: "right", fontWeight: 600, fontSize: 11.5 }}>Rate (per delivered message)</th>
                 </tr>
               </thead>
               <tbody>
@@ -1893,20 +2132,20 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
                   ["WhatsApp API Calling — Outbound", "INR 0.52620/min", false, null],
                 ].map(([type, rate, free, note], i) => (
                   <tr key={type} style={{ background: i % 2 === 0 ? "#fff" : "#f7faf9", borderBottom: "1px solid #e5e7eb" }}>
-                    <td style={{ padding: "10px 16px", color: "#374151", fontSize: 12.5 }}>
+                    <td style={{ padding: "7px 14px", color: "#374151", fontSize: 12 }}>
                       {type}
-                      {note && <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2, fontStyle: "italic" }}>{note}</div>}
+                      {note && <div style={{ fontSize: 10.5, color: "#6b7280", marginTop: 1, fontStyle: "italic" }}>{note}</div>}
                     </td>
-                    <td style={{ padding: "10px 16px", textAlign: "right", fontWeight: 600, color: free ? "#0b5235" : "#111827", fontSize: 12.5 }}>{rate}</td>
+                    <td style={{ padding: "7px 14px", textAlign: "right", fontWeight: 600, color: free ? "#0b5235" : "#111827", fontSize: 12 }}>{rate}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
             <div style={{ marginTop: 10, fontSize: 11.5, color: "#6b7280" }}>For rates outside India: <span style={{ color: "#1aad74" }}>https://doubletick.io/conversation-cost</span></div>
           </PrintSection>
-          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 28 }}>
-            <div style={{ textAlign: "center", minWidth: 260 }}>
-              <img src={SHIVAM_SIG} alt="Authorised Signatory" style={{ width: 220, objectFit: "contain", display: "block", margin: "0 auto" }} />
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20, breakInside: "avoid", breakBefore: "avoid" }}>
+            <div style={{ textAlign: "center", minWidth: 220 }}>
+              <img src={SHIVAM_SIG} alt="Authorised Signatory" style={{ width: 180, objectFit: "contain", display: "block", margin: "0 auto" }} />
             </div>
           </div>
         </div>
@@ -1952,18 +2191,48 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
 
           {/* PDF Theme Toggle */}
           <div style={{ display: "flex", background: T.surfaceHigh, borderRadius: 8, border: `1px solid ${T.border}`, overflow: "hidden" }}>
-            {[["green","Green"],["navy","Navy"]].map(([t, label]) => (
-              <button key={t} onClick={() => setPdfTheme(t)} style={{ padding: "6px 12px", background: pdfTheme === t ? T.green : "transparent", border: "none", color: pdfTheme === t ? "#fff" : T.textMuted, cursor: "pointer", fontSize: 11.5, fontWeight: 600 }}>{label}</button>
+            {[["green","Green"],["navy","Navy"],["gold","Gold"]].map(([t, label]) => (
+              <button key={t} onClick={() => setPdfTheme(t)}
+                style={{ padding: "6px 12px", background: pdfTheme === t ? (t === "gold" ? "#d97706" : t === "navy" ? "#1a3360" : T.green) : "transparent", border: "none", color: pdfTheme === t ? "#fff" : T.textMuted, cursor: "pointer", fontSize: 11.5, fontWeight: 600 }}>
+                {label}
+              </button>
             ))}
           </div>
           {preview ? (
             <>
               <button onClick={() => setPreview(false)} style={{ padding: "8px 16px", background: "transparent", border: `1px solid ${T.borderMed}`, borderRadius: 7, color: T.textSub, cursor: "pointer", fontSize: 13, fontWeight: 500 }}>← Edit</button>
+              <button onClick={handleBuilderWhatsAppShare} title="Send via WhatsApp"
+                style={{ padding: "8px 16px", background: "rgba(37,211,102,0.12)", border: "1px solid rgba(37,211,102,0.35)", borderRadius: 7, color: "#25d366", cursor: "pointer", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 7 }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.096.537 4.07 1.482 5.793L.057 24l6.345-1.438A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.65-.49-5.186-1.348l-.371-.214-3.768.854.888-3.662-.233-.38A10 10 0 012 12C2 6.486 6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/></svg>
+                WhatsApp
+              </button>
               <button onClick={download} style={{ padding: "8px 20px", background: `linear-gradient(135deg, ${T.green}, ${T.greenDk})`, border: "none", borderRadius: 7, color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>↓ Download PDF</button>
             </>
           ) : null}
         </div>
       </div>
+
+      {/* ── DRAFT RESTORE BANNER ── */}
+      {draftBanner && (
+        <div style={{ background: "rgba(217,119,6,0.08)", borderBottom: "1px solid rgba(217,119,6,0.25)", padding: "10px 28px", display: "flex", alignItems: "center", gap: 14 }}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#d97706" strokeWidth="1.5"/><path d="M8 4.5v4l2.5 2" stroke="#d97706" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          <span style={{ fontSize: 12.5, color: "#d97706", fontWeight: 600 }}>Unsaved draft found</span>
+          <span style={{ fontSize: 12, color: "#92400e" }}>
+            {draftBanner.clientName ? `${draftBanner.clientName} · ` : ""}{draftBanner.companyName || ""}
+            {draftBanner._savedAt ? ` · ${new Date(draftBanner._savedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}
+          </span>
+          <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+            <button onClick={() => restoreDraft(draftBanner)}
+              style={{ padding: "5px 14px", background: "#d97706", border: "none", borderRadius: 6, color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+              Restore Draft
+            </button>
+            <button onClick={() => { clearDraft(); setDraftBanner(null); }}
+              style={{ padding: "5px 12px", background: "transparent", border: "1px solid rgba(217,119,6,0.3)", borderRadius: 6, color: "#92400e", fontSize: 12, cursor: "pointer" }}>
+              Discard
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── QUOTE LOG DRAWER ── */}
       {showQuoteLog && (
@@ -2351,7 +2620,7 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
           {/* ── LEFT: Form panel ── */}
           <div style={{ flex: 1, minWidth: 0, overflowY: "auto" }}>
             {/* Pill steps sub-header (Concept B style) */}
-            <div style={{ borderBottom: `1px solid ${T.border}`, background: T.surface, padding: "0 32px", display: "flex", alignItems: "center", gap: 4 }}>
+            <div style={{ borderBottom: `1px solid ${T.border}`, background: T.surface, padding: isMobile ? "0 12px" : "0 32px", display: "flex", alignItems: "center", gap: 4, overflowX: "auto" }}>
               {/* Progress bar under steps */}
               <div style={{ display: "flex", alignItems: "center", gap: 0, padding: "12px 0", flex: 1 }}>
                 {STEPS.map((s, i) => {
@@ -2366,7 +2635,7 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
                         <div style={{ width: 18, height: 18, borderRadius: "50%", background: active ? "rgba(255,255,255,0.25)" : done ? T.green : T.surfaceHigh, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9.5, fontWeight: 700, color: active || done ? "#fff" : T.textMuted, flexShrink: 0 }}>
                           {done ? "✓" : i + 1}
                         </div>
-                        <span style={{ fontSize: 12, fontWeight: active ? 700 : done ? 600 : 400, color: active ? "#fff" : done ? T.greenLt : T.textMuted, whiteSpace: "nowrap" }}>{s}</span>
+                        {!isMobile && <span style={{ fontSize: 12, fontWeight: active ? 700 : done ? 600 : 400, color: active ? "#fff" : done ? T.greenLt : T.textMuted, whiteSpace: "nowrap" }}>{s}</span>}
                       </div>
                       {i < STEPS.length - 1 && (
                         <div style={{ width: 20, height: 1.5, background: done ? T.green : T.border, transition: "background 0.3s", flexShrink: 0 }} />
@@ -2386,19 +2655,33 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
               )}
             </div>
             {/* Step content */}
-            <div style={{ maxWidth: 680, margin: "0 auto", padding: "40px 28px 100px" }}>
+            <div style={{ maxWidth: 680, margin: "0 auto", padding: isMobile ? "20px 14px 80px" : "40px 28px 100px" }}>
 
           {/* STEP 1 */}
           {step === 1 && (
             <>
               <StepHead title="Client Information" sub="Enter the recipient's details for this quotation." />
+              {/* Welcome banner */}
+              <div style={{ margin: "0 0 20px", padding: "20px 24px", background: "linear-gradient(135deg, rgba(23,160,102,0.08) 0%, rgba(13,21,32,0) 70%)", border: `1px solid rgba(23,160,102,0.15)`, borderRadius: 14, display: "flex", alignItems: "center", gap: 18 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(23,160,102,0.12)", border: "1px solid rgba(23,160,102,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 2L3 6v5c0 4.4 3.4 8.5 8 9.5 4.6-1 8-5.1 8-9.5V6L11 2z" stroke="#21c47a" strokeWidth="1.5" strokeLinejoin="round"/><path d="M8 11l2 2 4-4" stroke="#21c47a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 3 }}>New Quotation</div>
+                  <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.5 }}>Fill in the client details below, or load a saved template to get started quickly.</div>
+                </div>
+                <div style={{ marginLeft: "auto", textAlign: "right", flexShrink: 0 }}>
+                  <div style={{ fontSize: 10, color: T.textMuted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 2 }}>Quote ID</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: T.greenLt, fontFamily: "monospace" }}>{qid}</div>
+                </div>
+              </div>
 
               {/* Templates panel */}
               <div style={{ marginBottom: 18 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: showTemplates ? 12 : 0 }}>
-                  <button onClick={() => setShowTemplates(p => !p)} style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 14px", background: showTemplates ? "rgba(23,160,102,0.1)" : "rgba(23,160,102,0.06)", border: `1.5px solid ${showTemplates ? T.green : T.borderMed}`, borderRadius: 8, color: T.greenLt, cursor: "pointer", fontSize: 12.5, fontWeight: 600 }}>
+                  <button onClick={() => setShowTemplates(p => !p)} style={{ display: "flex", alignItems: "center", gap: 7, padding: "8px 16px", background: showTemplates ? "rgba(23,160,102,0.1)" : "rgba(23,160,102,0.05)", border: `1.5px solid ${showTemplates ? T.green : T.borderMed}`, borderRadius: 9, color: T.greenLt, cursor: "pointer", fontSize: 12.5, fontWeight: 600 }}>
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}><rect x="1" y="1" width="12" height="12" rx="2" stroke="#21c47a" strokeWidth="1.3"/><path d="M4 5h6M4 7.5h6M4 10h4" stroke="#21c47a" strokeWidth="1.3" strokeLinecap="round"/></svg>
-                    Saved Templates
+                    {templates.length > 0 ? "Load Saved Template" : "Saved Templates"}
                     {templates.length > 0 && <span style={{ background: T.green, color: "#fff", borderRadius: 10, fontSize: 10, padding: "1px 6px", fontWeight: 700 }}>{templates.length}</span>}
                     <span style={{ fontSize: 10, color: T.textMuted, marginLeft: 2 }}>{showTemplates ? "▲" : "▼"}</span>
                   </button>
@@ -2459,6 +2742,7 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
               </div>
 
               <PanelCard>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.6px", color: "#64748b", textTransform: "uppercase", marginBottom: 18 }}>Client Details</div>
                 <div style={{ display: "grid", gap: 20 }}>
                   <FField label="Client's Full Name *"><input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="e.g. Anurag Sharma" style={baseInput} /></FField>
                   <FField label="Company Name *">
@@ -2512,112 +2796,122 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
             <>
               <StepHead title="Plan & Billing" sub="Choose the billing cycle and DoubleTick plan to propose." />
               <PanelCard>
-                <FField label="Billing Cycle">
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginTop: 4 }}>
+                {/* ── VARIANT A: Segmented billing pill ── */}
+                <div style={{ marginBottom: 6 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.6px", color: "#64748b", textTransform: "uppercase", marginBottom: 10 }}>Billing Cycle</div>
+                  <div style={{ display: "flex", background: "#0b1520", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: 4, gap: 2 }}>
                     {[
                       ["monthly", "Monthly", "Custom / Approval"],
                       ["quarterly", "Quarterly", "Standard"],
-                      ...(plan === "enterprise" ? [["halfYearly", "Half-Yearly", "Enterprise Only"]] : []),
+                      ["halfYearly", "Bi-Annual", "6 Months"],
                       ["yearly", "Yearly", "Best Value"],
                     ].map(([b, label, badge]) => (
-                      <div key={b} onClick={() => { setBilling(b); setAddonQty({}); }} style={{ padding: "13px 12px", borderRadius: 10, border: `1.5px solid ${billing === b ? T.green : T.border}`, background: billing === b ? "rgba(23,160,102,0.07)" : "#0d1520", cursor: "pointer", textAlign: "center", transition: "all 0.15s" }}>
-                        <div style={{ fontWeight: 600, fontSize: 14, color: billing === b ? T.greenLt : T.textSub }}>{label}</div>
-                        <div style={{ fontSize: 10.5, color: billing === b ? T.greenLt : T.textMuted, marginTop: 3, fontWeight: 500 }}>{badge}</div>
+                      <div key={b} onClick={() => { setBilling(b); setAddonQty({}); }} style={{ flex: 1, padding: "10px 8px", borderRadius: 9, cursor: "pointer", textAlign: "center", background: billing === b ? "rgba(23,160,102,0.12)" : "transparent", transition: "all 0.18s" }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: billing === b ? T.greenLt : "#64748b", transition: "color 0.18s" }}>{label}</div>
+                        <div style={{ fontSize: 10, color: billing === b ? "rgba(74,222,128,0.6)" : "#374151", marginTop: 3 }}>{badge}</div>
                       </div>
                     ))}
                   </div>
-                  {billing === "monthly" && <div style={{ marginTop: 10, padding: "9px 14px", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 8, fontSize: 12, color: "#f59e0b" }}>{plan === "enterprise" ? "Enterprise monthly pricing is custom — enter the agreed amount below." : "Monthly billing for Starter / Pro requires management approval before sending."}</div>}
-                  {billing === "quarterly" && plan === "enterprise" && <div style={{ marginTop: 10, padding: "9px 14px", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 8, fontSize: 12, color: "#f59e0b" }}>Enterprise quarterly pricing is custom — enter the agreed quarterly amount below.</div>}
-                  {billing === "yearly" && plan === "enterprise" && <div style={{ marginTop: 10, padding: "9px 14px", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 8, fontSize: 12, color: "#f59e0b" }}>Enterprise yearly pricing is custom — enter the agreed annual amount below.</div>}
-                </FField>
-
-                <div style={{ marginTop: 22 }}>
-                  <FField label="Plan">
-                    <div style={{ display: "grid", gap: 10, marginTop: 4 }}>
-                      {Object.entries(PLANS).map(([key, p]) => {
-                        const isEnt = key === "enterprise";
-                        const basePrice = isEnt ? (parseInt(enterpriseCustomPrice.replace(/[^0-9]/g, ""), 10) || null) : (p[billing] ?? p.quarterly);
-                        const aiExtra = isEnt && enterpriseAIBots ? (billing === "quarterly" ? 45000 : billing === "yearly" ? 180000 : 15000) : 0;
-                        const displayPrice = basePrice != null ? basePrice + aiExtra : null;
-                        const isSelected = plan === key;
-                        const billingShort = billing === "monthly" ? "mo" : billing === "quarterly" ? "qtr" : "yr";
-                        return (
-                          <div key={key}>
-                            <div onClick={() => setPlan(key)} style={{ padding: "16px 20px", borderRadius: 10, border: `1.5px solid ${isSelected ? T.green : T.border}`, background: isSelected ? "rgba(23,160,102,0.06)" : T.surface, cursor: "pointer", transition: "all 0.15s" }}>
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                                <div style={{ flex: 1 }}>
-                                  <div style={{ fontWeight: 700, fontSize: 15, color: isSelected ? T.greenLt : T.text }}>{p.name}</div>
-                                  <div style={{ fontSize: 12, color: T.textMuted, marginTop: 3 }}>{p.subtitle}</div>
-                                </div>
-                                {isEnt ? (
-                                  <div style={{ marginLeft: 16, flexShrink: 0, textAlign: "right" }}>
-                                    <div style={{ fontSize: 11, color: T.textMuted, marginBottom: 5 }}>Custom {billing} price</div>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                      <span style={{ fontSize: 15, fontWeight: 700, color: T.white }}>₹</span>
-                                      <input value={enterpriseCustomPrice} onChange={e => setEnterpriseCustomPrice(e.target.value)} onClick={e => e.stopPropagation()} placeholder="e.g. 45,000" style={{ width: 110, padding: "6px 10px", background: "#0d1520", border: `1.5px solid ${T.green}`, borderRadius: 7, color: T.white, fontSize: 14, fontWeight: 700, outline: "none", fontFamily: "inherit" }} />
-                                      <span style={{ fontSize: 11, color: T.textMuted }}>/{billingShort}</span>
-                                    </div>
-                                    {enterpriseCustomPrice && <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>{!discount && `+GST · ₹${fmtINR(Math.round((parseInt(enterpriseCustomPrice.replace(/[^0-9]/g,""),10)||0)*1.18))} total`}</div>}
-                                    <div style={{ fontSize: 10.5, color: enterpriseAIBots ? T.greenLt : T.textMuted, marginTop: 3 }}>{enterpriseAIBots ? `+₹${billing==="yearly"?"1,80,000":billing==="quarterly"?"45,000":"15,000"} AI Bots` : "without AI Bots"}</div>
-                                  </div>
-                                ) : (
-                                  <div style={{ textAlign: "right", marginLeft: 16, flexShrink: 0 }}>
-                                    {discount > 0 && <div style={{ fontSize: 12, color: T.textMuted, textDecoration: "line-through", marginBottom: 1 }}>₹{fmtINR(displayPrice ?? 0)}</div>}
-                                    <div style={{ fontWeight: 700, fontSize: 19, color: discount > 0 ? T.greenLt : T.white }}>₹{fmtINR(Math.round((displayPrice ?? 0) * (1 - discount / 100)))}</div>
-                                    {discount > 0 && <div style={{ fontSize: 10.5, color: T.greenLt, fontWeight: 600, marginTop: 1 }}>{discount}% off applied</div>}
-                                    <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>+GST · ₹{fmtINR(Math.round(Math.round((displayPrice ?? 0) * (1 - discount / 100)) * 1.18))} total</div>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Enterprise tier badge — shows feature eligibility live as price is typed */}
-                              {isEnt && isSelected && enterpriseCustomPrice && (
-                                <EnterpriseTierBadge customPrice={enterpriseCustomPrice} billing={billing} />
-                              )}
-                            </div>
-
-                            {isSelected && isEnt && (
-                              <div style={{ marginTop: 8, padding: "12px 16px", background: T.surfaceHigh, borderRadius: 9, border: `1px solid ${T.borderMed}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <div>
-                                  <div style={{ fontSize: 13.5, fontWeight: 600, color: T.text }}>Include AI Chat Bots?</div>
-                                  <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 2 }}>+₹15,000/month · Requires ChatGPT Plus subscription</div>
-                                </div>
-                                <div style={{ display: "flex", gap: 8 }}>
-                                  <button onClick={e => { e.stopPropagation(); setEnterpriseAIBots(false); }} style={{ padding: "6px 14px", borderRadius: 6, border: `1.5px solid ${!enterpriseAIBots ? T.green : T.border}`, background: !enterpriseAIBots ? "rgba(23,160,102,0.1)" : "transparent", color: !enterpriseAIBots ? T.greenLt : T.textSub, cursor: "pointer", fontSize: 12.5, fontWeight: 600 }}>No</button>
-                                  <button onClick={e => { e.stopPropagation(); setEnterpriseAIBots(true); }} style={{ padding: "6px 14px", borderRadius: 6, border: `1.5px solid ${enterpriseAIBots ? T.green : T.border}`, background: enterpriseAIBots ? "rgba(23,160,102,0.1)" : "transparent", color: enterpriseAIBots ? T.greenLt : T.textSub, cursor: "pointer", fontSize: 12.5, fontWeight: 600 }}>Yes</button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </FField>
+                  {billing === "monthly" && <div style={{ marginTop: 8, padding: "8px 13px", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 8, fontSize: 11.5, color: "#f59e0b" }}>{plan === "enterprise" ? "Enterprise monthly pricing is custom — enter the agreed amount below." : "Monthly billing requires management approval before sending."}</div>}
                 </div>
 
-                {/* ── EDITABLE FEATURES PANEL ── */}
-                <div style={{ marginTop: 18, padding: "16px 18px", background: T.surfaceHigh, borderRadius: 11, border: `1px solid ${T.border}` }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                    <div>
-                      <div style={{ fontSize: 13.5, fontWeight: 600, color: T.text }}>Included Features</div>
-                      <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 2 }}>
-                        {customFeatures ? "Manually edited · " : "Auto-computed from price · "}
-                        <span style={{ color: T.greenLt, cursor: "pointer", textDecoration: "underline" }} onClick={() => setCustomFeatures(null)}>Reset to auto</span>
-                      </div>
-                    </div>
-                    {customFeatures && (
-                      <span style={{ fontSize: 10.5, background: "rgba(23,160,102,0.15)", color: T.greenLt, padding: "3px 10px", borderRadius: 20, fontWeight: 600 }}>Edited</span>
-                    )}
+                {/* ── VARIANT A: 3-column horizontal plan cards ── */}
+                <div style={{ marginTop: 20 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.6px", color: "#64748b", textTransform: "uppercase", marginBottom: 10 }}>Plan</div>
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 10 }}>
+                    {Object.entries(PLANS).map(([key, p]) => {
+                      const isEnt = key === "enterprise";
+                      const basePrice = isEnt ? (parseInt(enterpriseCustomPrice.replace(/[^0-9]/g, ""), 10) || null) : (p[billing] ?? p.quarterly);
+                      const aiExtra = isEnt && enterpriseAIBots ? (billing === "quarterly" ? 45000 : billing === "yearly" ? 180000 : 15000) : 0;
+                      const displayPrice = basePrice != null ? basePrice + aiExtra : null;
+                      const isSelected = plan === key;
+                      const billingShort = billing === "monthly" ? "mo" : billing === "quarterly" ? "qtr" : billing === "halfYearly" ? "6mo" : "yr";
+                      const discountedPrice = Math.round((displayPrice ?? 0) * (1 - discount / 100));
+                      return (
+                        <div key={key} style={{ position: "relative" }}>
+                          <div onClick={() => setPlan(key)} style={{ border: `1.5px solid ${isSelected ? T.green : "rgba(255,255,255,0.07)"}`, borderRadius: 14, padding: "16px 14px", cursor: "pointer", background: isSelected ? "rgba(13,31,19,0.9)" : "#0f1822", transition: "all 0.18s", height: "100%" }}>
+                            {/* Radio indicator */}
+                            <div style={{ width: 16, height: 16, borderRadius: "50%", border: `1.5px solid ${isSelected ? T.green : "rgba(255,255,255,0.2)"}`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12, transition: "all 0.15s" }}>
+                              <div style={{ width: 8, height: 8, borderRadius: "50%", background: T.green, transform: isSelected ? "scale(1)" : "scale(0)", transition: "transform 0.15s" }} />
+                            </div>
+                            {key === "pro" && <div style={{ position: "absolute", top: 12, right: 12, fontSize: 9, fontWeight: 700, padding: "3px 7px", borderRadius: 5, background: "rgba(167,139,250,0.12)", color: "#a78bfa", border: "1px solid rgba(167,139,250,0.25)", letterSpacing: "0.3px" }}>POPULAR</div>}
+                            <div style={{ fontSize: 15, fontWeight: 700, color: "#f1f5f9", marginBottom: 3 }}>{p.name}</div>
+                            <div style={{ fontSize: 11, color: "#64748b", marginBottom: 14, lineHeight: 1.4 }}>{p.subtitle}</div>
+                            {isEnt ? (
+                              <div>
+                                <div style={{ fontSize: 11, color: "#64748b", marginBottom: 6 }}>Custom {billing} price</div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                  <span style={{ fontSize: 14, fontWeight: 700, color: T.white }}>₹</span>
+                                  <input value={enterpriseCustomPrice} onChange={e => setEnterpriseCustomPrice(e.target.value)} onClick={e => e.stopPropagation()} placeholder="45,000" style={{ width: "100%", padding: "6px 8px", background: "#0d1520", border: `1.5px solid ${T.green}`, borderRadius: 7, color: T.white, fontSize: 14, fontWeight: 700, outline: "none", fontFamily: "inherit" }} />
+                                </div>
+                                {enterpriseCustomPrice && (() => {
+                                  const raw = parseInt(enterpriseCustomPrice.replace(/[^0-9]/g,""),10) || 0;
+                                  return raw > 0 ? (
+                                    <div style={{ marginTop: 10, padding: "8px 10px", background: "rgba(23,160,102,0.06)", borderRadius: 8, border: "1px solid rgba(23,160,102,0.15)" }}>
+                                      <div style={{ fontSize: 20, fontWeight: 800, color: T.greenLt, letterSpacing: "-0.5px", lineHeight: 1.1 }}>
+                                        ₹{fmtINR(raw)}
+                                        <span style={{ fontSize: 11, fontWeight: 400, color: "#64748b", marginLeft: 4 }}>/{billingShort}</span>
+                                      </div>
+                                      <div style={{ fontSize: 10.5, color: "#64748b", marginTop: 3 }}>+GST · ₹{fmtINR(Math.round(raw * 1.18))} total</div>
+                                    </div>
+                                  ) : null;
+                                })()}
+                                <div style={{ fontSize: 10, color: enterpriseAIBots ? T.greenLt : "#475569", marginTop: 4 }}>{enterpriseAIBots ? `+₹${billing==="yearly"?"1,80,000":billing==="quarterly"?"45,000":"15,000"} AI Bots` : "without AI Bots"}</div>
+                              </div>
+                            ) : (
+                              <div>
+                                {discount > 0 && <div style={{ fontSize: 11, color: "#475569", textDecoration: "line-through", marginBottom: 2 }}>₹{fmtINR(displayPrice ?? 0)}</div>}
+                                <div style={{ fontSize: 22, fontWeight: 800, color: isSelected ? T.greenLt : "#f8fafc", letterSpacing: "-0.5px" }}>₹{fmtINR(discountedPrice)}</div>
+                                {discount > 0 && <div style={{ fontSize: 10, color: T.greenLt, fontWeight: 600, marginTop: 1 }}>{discount}% off</div>}
+                                <div style={{ fontSize: 10.5, color: "#64748b", marginTop: 3 }}>+GST · ₹{fmtINR(Math.round(discountedPrice * 1.18))} total</div>
+                              </div>
+                            )}
+                            {isEnt && isSelected && enterpriseCustomPrice && (
+                              <EnterpriseTierBadge customPrice={enterpriseCustomPrice} billing={billing} />
+                            )}
+                          </div>
+                          {/* Enterprise AI Bots toggle below card when selected */}
+                          {isSelected && isEnt && (
+                            <div style={{ marginTop: 8, padding: "11px 14px", background: T.surfaceHigh, borderRadius: 9, border: `1px solid ${T.borderMed}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <div>
+                                <div style={{ fontSize: 12.5, fontWeight: 600, color: T.text }}>AI Chat Bots?</div>
+                                <div style={{ fontSize: 10.5, color: T.textMuted, marginTop: 1 }}>+₹15k/mo · ChatGPT Plus req.</div>
+                              </div>
+                              <div style={{ display: "flex", gap: 6 }}>
+                                <button onClick={e => { e.stopPropagation(); setEnterpriseAIBots(false); }} style={{ padding: "5px 12px", borderRadius: 6, border: `1.5px solid ${!enterpriseAIBots ? T.green : T.border}`, background: !enterpriseAIBots ? "rgba(23,160,102,0.1)" : "transparent", color: !enterpriseAIBots ? T.greenLt : T.textSub, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>No</button>
+                                <button onClick={e => { e.stopPropagation(); setEnterpriseAIBots(true); }} style={{ padding: "5px 12px", borderRadius: 6, border: `1.5px solid ${enterpriseAIBots ? T.green : T.border}`, background: enterpriseAIBots ? "rgba(23,160,102,0.1)" : "transparent", color: enterpriseAIBots ? T.greenLt : T.textSub, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Yes</button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div style={{ display: "grid", gap: 5, marginBottom: 12 }}>
+                </div>
+
+                {/* ── VARIANT A: Features box ── */}
+                <div style={{ marginTop: 18, background: "#0f1822", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, overflow: "hidden" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 18px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.3px", textTransform: "uppercase" }}>Included Features</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <span style={{ fontSize: 11, color: "#475569" }}>{customFeatures ? "Manually edited" : "Auto-computed from price"}</span>
+                      <button onClick={() => setCustomFeatures(null)} style={{ fontSize: 11, color: T.greenLt, cursor: "pointer", textDecoration: "none", background: "none", border: "none", padding: 0, fontFamily: "inherit" }}>Reset to auto</button>
+                      {customFeatures && <span style={{ fontSize: 10, background: "rgba(23,160,102,0.15)", color: T.greenLt, padding: "2px 8px", borderRadius: 20, fontWeight: 600 }}>Edited</span>}
+                    </div>
+                  </div>
+                  <div style={{ padding: "6px 10px 2px" }}>
                     {enterpriseFeatures.map((f, i) => (
-                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", background: "#0d1520", borderRadius: 7, border: `1px solid ${T.border}` }}>
-                        <span style={{ color: T.greenLt, fontSize: 10, flexShrink: 0 }}>▶</span>
-                        <span style={{ fontSize: 12.5, color: T.text, flex: 1 }}>{f}</span>
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 8px", borderRadius: 7, transition: "background 0.12s" }}
+                        onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.03)"}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                        <div style={{ width: 6, height: 6, borderRadius: "50%", background: T.green, flexShrink: 0 }} />
+                        <span style={{ flex: 1, fontSize: 13, color: "#cbd5e1" }}>{f}</span>
                         <button
                           onClick={() => setCustomFeatures((enterpriseFeatures).filter((_, fi) => fi !== i))}
-                          style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: 13, padding: "0 2px", lineHeight: 1, flexShrink: 0 }}
+                          style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 13, padding: "0 2px", lineHeight: 1, flexShrink: 0, opacity: 0.7 }}
                           title="Remove feature"
+                          onMouseEnter={e => e.currentTarget.style.opacity = "1"}
+                          onMouseLeave={e => e.currentTarget.style.opacity = "0.7"}
                         >✕</button>
                       </div>
                     ))}
@@ -2667,7 +2961,7 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
               <StepHead title="Add-on Features" sub={`Add-ons for DoubleTick ${planData.name} · ${effectiveBillingLabel} billing`} />
               <PanelCard>
                 {/* Group addons by group label */}
-                {["Platform Features", "Users & Numbers", "Integrations", "Platform Extras", "One-Time & Usage"].map(groupName => {
+                {["Platform Features", "Users & Numbers", "Integrations", "Platform Extras", "One-Time & Usage", "Calling Infrastructure"].map(groupName => {
                   const groupItems = planAddons.filter(a => a.group === groupName);
                   if (groupItems.length === 0) return null;
                   return (
@@ -2716,6 +3010,25 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
                                   )}
                                 </div>
                               </div>
+                              {/* PSTN configurator */}
+                              {a.id === "pstn" && on && (
+                                <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(255,255,255,0.05)", borderRadius: 8, border: "1px solid rgba(255,255,255,0.08)" }}>
+                                  <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6 }}>Configure Channels</div>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                                    <span style={{ fontSize: 12, color: "#d1d5db" }}>Channels:</span>
+                                    <button onClick={() => setPstnChannels(Math.max(1, pstnChannels - 1))} style={{ width: 24, height: 24, borderRadius: 4, border: "1px solid #374151", background: "#1f2937", color: "#fff", cursor: "pointer", fontSize: 14 }}>−</button>
+                                    <span style={{ fontSize: 14, fontWeight: 600, color: "#fff", minWidth: 24, textAlign: "center" }}>{pstnChannels}</span>
+                                    <button onClick={() => setPstnChannels(pstnChannels + 1)} style={{ width: 24, height: 24, borderRadius: 4, border: "1px solid #374151", background: "#1f2937", color: "#fff", cursor: "pointer", fontSize: 14 }}>+</button>
+                                  </div>
+                                  <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>DoubleTick fee: ₹{pstnChannels * 150}/month ({pstnChannels} × ₹150)</div>
+                                  <div style={{ fontSize: 11, color: "#f59e0b" }}>Tata Tele: ₹{pstnChannels * 700}/month — paid directly to TTBS (not in quote)</div>
+                                  <label style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8, cursor: "pointer" }}>
+                                    <input type="checkbox" checked={pstnAICalling} onChange={(e) => setPstnAICalling(e.target.checked)} style={{ accentColor: "#10b981" }} />
+                                    <span style={{ fontSize: 12, color: "#d1d5db" }}>Add AI Calling (+₹5/min)</span>
+                                  </label>
+                                  {pstnAICalling && <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>Calling charges: ₹0.40/min + AI: ₹5/min</div>}
+                                </div>
+                              )}
                               {/* Quantity row */}
                               {on && a.perUnit && unitPrice != null && (
                                 <div style={{ borderTop: `1px solid ${T.border}`, padding: "10px 16px", background: "rgba(23,160,102,0.04)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
@@ -2786,25 +3099,31 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
                     <div style={{ fontSize: 9.5, color: "#4a6070", textTransform: "uppercase", letterSpacing: 2.5, fontWeight: 700 }}>Custom Add-on</div>
                     <div style={{ flex: 1, height: 1, background: "linear-gradient(to right, #1c2836, transparent)" }} />
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto auto", gap: 8, alignItems: "center" }}>
-                    <input value={newCustomAddon.label} onChange={e => setNewCustomAddon(p => ({ ...p, label: e.target.value }))} placeholder="Add-on name / description" style={{ ...baseInput, fontSize: 13, padding: "9px 12px" }} />
-                    <input value={newCustomAddon.price} onChange={e => setNewCustomAddon(p => ({ ...p, price: e.target.value }))} placeholder="Price" style={{ ...baseInput, fontSize: 13, padding: "9px 12px", width: 110 }} />
-                    <select value={newCustomAddon.billing} onChange={e => setNewCustomAddon(p => ({ ...p, billing: e.target.value }))} style={{ ...baseInput, fontSize: 13, padding: "9px 12px", width: 130, cursor: "pointer" }}>
-                      <option value="monthly">Monthly</option>
-                      <option value="quarterly">Quarterly</option>
-                      <option value="halfYearly">Half-Yearly</option>
-                      <option value="yearly">Yearly</option>
-                      <option value="one-time">One-Time</option>
-                      <option value="custom">Custom</option>
-                    </select>
-                    <button onClick={() => { if (!newCustomAddon.label.trim()) return; setCustomAddonsList(p => [...p, { ...newCustomAddon, id: `custom_${Date.now()}` }]); setNewCustomAddon({ label: "", price: "", billing: "custom" }); }} style={{ background: T.green, border: "none", borderRadius: 8, color: "#fff", fontWeight: 700, fontSize: 13, padding: "9px 16px", cursor: "pointer", whiteSpace: "nowrap" }}>+ Add</button>
+                  <div style={{ display: "grid", gap: 8 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto auto", gap: 8, alignItems: "center" }}>
+                      <input value={newCustomAddon.label} onChange={e => setNewCustomAddon(p => ({ ...p, label: e.target.value }))} placeholder="Add-on name *" style={{ ...baseInput, fontSize: 13, padding: "9px 12px" }} />
+                      <input value={newCustomAddon.price} onChange={e => setNewCustomAddon(p => ({ ...p, price: e.target.value }))} placeholder="Price" style={{ ...baseInput, fontSize: 13, padding: "9px 12px", width: 110 }} />
+                      <select value={newCustomAddon.billing} onChange={e => setNewCustomAddon(p => ({ ...p, billing: e.target.value }))} style={{ ...baseInput, fontSize: 13, padding: "9px 12px", width: 130, cursor: "pointer" }}>
+                        <option value="monthly">Monthly</option>
+                        <option value="quarterly">Quarterly</option>
+                        <option value="halfYearly">Bi-Annual</option>
+                        <option value="yearly">Yearly</option>
+                        <option value="one-time">One-Time</option>
+                        <option value="custom">Custom</option>
+                      </select>
+                      <button onClick={() => { if (!newCustomAddon.label.trim()) return; setCustomAddonsList(p => [...p, { ...newCustomAddon, id: `custom_${Date.now()}` }]); setNewCustomAddon({ label: "", desc: "", price: "", billing: "custom" }); }} style={{ background: T.green, border: "none", borderRadius: 8, color: "#fff", fontWeight: 700, fontSize: 13, padding: "9px 16px", cursor: "pointer", whiteSpace: "nowrap" }}>+ Add</button>
+                    </div>
+                    <input value={newCustomAddon.desc} onChange={e => setNewCustomAddon(p => ({ ...p, desc: e.target.value }))} placeholder="Description (optional) — shown on the quote" style={{ ...baseInput, fontSize: 12.5, padding: "8px 12px" }} />
                   </div>
                   {customAddonsList.length > 0 && (
                     <div style={{ marginTop: 10, display: "grid", gap: 6 }}>
                       {customAddonsList.map(ca => (
-                        <div key={ca.id} style={{ padding: "9px 14px", borderRadius: 8, border: `1.5px solid ${T.green}`, background: "rgba(23,160,102,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <div style={{ fontSize: 13, color: T.text }}>{ca.label}</div>
-                          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                        <div key={ca.id} style={{ padding: "10px 14px", borderRadius: 8, border: `1.5px solid ${T.green}`, background: "rgba(23,160,102,0.05)", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 13, color: T.text, fontWeight: 600 }}>{ca.label}</div>
+                            {ca.desc && <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 3, lineHeight: 1.4 }}>{ca.desc}</div>}
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
                             <span style={{ fontSize: 12, color: T.greenLt, fontWeight: 600 }}>{ca.price ? `₹${Number(ca.price).toLocaleString("en-IN")}` : "—"} · {ca.billing}</span>
                             <button onClick={() => setCustomAddonsList(p => p.filter(x => x.id !== ca.id))} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: 13, padding: 0 }}>✕</button>
                           </div>
@@ -2892,7 +3211,7 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
               <StepHead title="Review & Generate" sub="Optionally add a scope note, verify the summary, then generate your quotation." />
               <PanelCard>
                 <FField label="Scope of Work (optional)">
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: isNarrow ? "1fr" : "1fr 1fr", gap: 14 }}>
                     {/* LEFT — editable textarea */}
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       <textarea
@@ -2931,7 +3250,7 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
                 </FField>
 
                 {/* ── SETTINGS ROW: expiry + ROI toggle + template save ── */}
-                <div style={{ marginTop: 20, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <div style={{ marginTop: 20, display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
                   <FField label="Quotation Expiry Date (optional)">
                     <input type="date" value={expiryDate} onChange={e => setExpiryDate(e.target.value)} style={{ ...baseInput, fontSize: 13 }} />
                   </FField>
@@ -2944,30 +3263,33 @@ Rules: No preamble. No closing line. Start directly with "${pair[0]}:". Each fie
                 </div>
 
                 {/* ── ROI PAGE TOGGLE ── */}
-                <div style={{ marginTop: 14, padding: "14px 16px", background: T.surfaceHigh, borderRadius: 10, border: `1px solid ${includeROI ? T.green : T.border}`, transition: "border-color 0.2s" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div>
-                      <div style={{ fontSize: 13.5, fontWeight: 600, color: T.text }}>Include ROI Calculator Page</div>
-                      <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 2 }}>AI-generated page estimating cost savings, leads captured, and business impact</div>
+                <div style={{ marginTop: 14, borderRadius: 12, border: `1.5px solid ${includeROI ? T.green : T.border}`, overflow: "hidden", transition: "border-color 0.2s" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", background: includeROI ? "rgba(23,160,102,0.06)" : T.surfaceHigh }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 9, background: includeROI ? "rgba(23,160,102,0.15)" : "rgba(255,255,255,0.04)", border: `1px solid ${includeROI ? "rgba(23,160,102,0.3)" : T.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.2s" }}>
+                      <svg width="17" height="17" viewBox="0 0 17 17" fill="none"><rect x="2" y="11" width="3" height="4" rx="1" stroke={includeROI ? "#21c47a" : "#475569"} strokeWidth="1.3"/><rect x="7" y="7" width="3" height="8" rx="1" stroke={includeROI ? "#21c47a" : "#475569"} strokeWidth="1.3"/><rect x="12" y="3" width="3" height="12" rx="1" stroke={includeROI ? "#21c47a" : "#475569"} strokeWidth="1.3"/><path d="M2 8.5l4-3 4 2 5-5" stroke={includeROI ? "#21c47a" : "#475569"} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </div>
-                    <div style={{ display: "flex", gap: 8, flexShrink: 0, marginLeft: 16 }}>
-                      <button onClick={() => setIncludeROI(false)} style={{ padding: "6px 14px", borderRadius: 6, border: `1.5px solid ${!includeROI ? T.green : T.border}`, background: !includeROI ? "rgba(23,160,102,0.1)" : "transparent", color: !includeROI ? T.greenLt : T.textSub, cursor: "pointer", fontSize: 12.5, fontWeight: 600 }}>No</button>
-                      <button onClick={() => { setIncludeROI(true); if (!roiText) handleGenerateROI(); }} style={{ padding: "6px 14px", borderRadius: 6, border: `1.5px solid ${includeROI ? T.green : T.border}`, background: includeROI ? "rgba(23,160,102,0.1)" : "transparent", color: includeROI ? T.greenLt : T.textSub, cursor: "pointer", fontSize: 12.5, fontWeight: 600 }}>Yes</button>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13.5, fontWeight: 600, color: T.text }}>Include ROI Calculator Page</div>
+                      <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 2, lineHeight: 1.4 }}>AI-generated page estimating cost savings, leads captured, and business impact</div>
+                    </div>
+                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                      <button onClick={() => setIncludeROI(false)} style={{ padding: "6px 14px", borderRadius: 7, border: `1.5px solid ${!includeROI ? T.green : T.border}`, background: !includeROI ? "rgba(23,160,102,0.12)" : "transparent", color: !includeROI ? T.greenLt : T.textSub, cursor: "pointer", fontSize: 12.5, fontWeight: 600, transition: "all 0.15s" }}>No</button>
+                      <button onClick={() => { setIncludeROI(true); if (!roiText) handleGenerateROI(); }} style={{ padding: "6px 14px", borderRadius: 7, border: `1.5px solid ${includeROI ? T.green : T.border}`, background: includeROI ? "rgba(23,160,102,0.12)" : "transparent", color: includeROI ? T.greenLt : T.textSub, cursor: "pointer", fontSize: 12.5, fontWeight: 600, transition: "all 0.15s" }}>Yes</button>
                     </div>
                   </div>
                   {includeROI && (
-                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${T.border}` }}>
+                    <div style={{ padding: "14px 16px", borderTop: `1px solid ${T.border}`, background: "#0a1219" }}>
                       {roiLoading ? (
-                        <div style={{ display: "flex", alignItems: "center", gap: 10, color: T.textMuted, fontSize: 13 }}>
-                          <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid rgba(255,255,255,0.2)", borderTopColor: T.greenLt, borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, color: T.textMuted, fontSize: 13, padding: "8px 0" }}>
+                          <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid rgba(255,255,255,0.2)", borderTopColor: T.greenLt, borderRadius: "50%", animation: "spin 0.7s linear infinite", flexShrink: 0 }} />
                           Generating ROI analysis…
                         </div>
                       ) : roiError ? (
-                        <div style={{ fontSize: 12, color: "#f87171" }}>{roiError}</div>
+                        <div style={{ fontSize: 12, color: "#f87171", padding: "6px 0" }}>{roiError}</div>
                       ) : roiText ? (
                         <div>
-                          <textarea value={roiText} onChange={e => setRoiText(e.target.value)} rows={6} style={{ ...baseInput, fontSize: 12.5, lineHeight: 1.65, resize: "vertical" }} />
-                          <button onClick={handleGenerateROI} style={{ marginTop: 6, fontSize: 11.5, color: T.greenLt, background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}>↺ Regenerate</button>
+                          <textarea value={roiText} onChange={e => setRoiText(e.target.value)} rows={6} style={{ ...baseInput, fontSize: 12.5, lineHeight: 1.7, resize: "vertical", background: "#0d1520" }} />
+                          <button onClick={handleGenerateROI} style={{ marginTop: 8, fontSize: 11.5, color: T.greenLt, background: "rgba(23,160,102,0.06)", border: `1px solid rgba(23,160,102,0.2)`, cursor: "pointer", padding: "5px 12px", borderRadius: 6, fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>↺ Regenerate</button>
                         </div>
                       ) : null}
                     </div>
@@ -3019,28 +3341,31 @@ ${emailDraft.body}`)} style={{ marginLeft: "auto", fontSize: 11, color: T.greenL
                 </div>
 
                 {/* ── CASE STUDY TOGGLE ── */}
-                <div style={{ marginTop: 14, padding: "14px 16px", background: T.surfaceHigh, borderRadius: 10, border: `1px solid ${includeCaseStudy ? T.green : T.border}`, transition: "border-color 0.2s" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div>
-                      <div style={{ fontSize: 13.5, fontWeight: 600, color: T.text }}>Include Client Case Studies</div>
-                      <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 2 }}>AI picks 2 relevant stories from DoubleTick's real client base based on your scope</div>
+                <div style={{ marginTop: 14, borderRadius: 12, border: `1.5px solid ${includeCaseStudy ? T.green : T.border}`, overflow: "hidden", transition: "border-color 0.2s" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", background: includeCaseStudy ? "rgba(23,160,102,0.06)" : T.surfaceHigh }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 9, background: includeCaseStudy ? "rgba(23,160,102,0.15)" : "rgba(255,255,255,0.04)", border: `1px solid ${includeCaseStudy ? "rgba(23,160,102,0.3)" : T.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.2s" }}>
+                      <svg width="17" height="17" viewBox="0 0 17 17" fill="none"><rect x="2" y="2" width="13" height="13" rx="2.5" stroke={includeCaseStudy ? "#21c47a" : "#475569"} strokeWidth="1.3"/><path d="M5 6h7M5 8.5h7M5 11h4.5" stroke={includeCaseStudy ? "#21c47a" : "#475569"} strokeWidth="1.3" strokeLinecap="round"/></svg>
                     </div>
-                    <div style={{ display: "flex", gap: 8, flexShrink: 0, marginLeft: 16 }}>
-                      <button onClick={() => setIncludeCaseStudy(false)} style={{ padding: "6px 14px", borderRadius: 6, border: `1.5px solid ${!includeCaseStudy ? T.green : T.border}`, background: !includeCaseStudy ? "rgba(23,160,102,0.1)" : "transparent", color: !includeCaseStudy ? T.greenLt : T.textSub, cursor: "pointer", fontSize: 12.5, fontWeight: 600 }}>No</button>
-                      <button onClick={() => { setIncludeCaseStudy(true); if (!caseStudyText) handleGenerateCaseStudy(); }} style={{ padding: "6px 14px", borderRadius: 6, border: `1.5px solid ${includeCaseStudy ? T.green : T.border}`, background: includeCaseStudy ? "rgba(23,160,102,0.1)" : "transparent", color: includeCaseStudy ? T.greenLt : T.textSub, cursor: "pointer", fontSize: 12.5, fontWeight: 600 }}>Yes</button>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13.5, fontWeight: 600, color: T.text }}>Include Client Case Studies</div>
+                      <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 2, lineHeight: 1.4 }}>AI picks 2 relevant stories from DoubleTick's real client base based on your scope</div>
+                    </div>
+                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                      <button onClick={() => setIncludeCaseStudy(false)} style={{ padding: "6px 14px", borderRadius: 7, border: `1.5px solid ${!includeCaseStudy ? T.green : T.border}`, background: !includeCaseStudy ? "rgba(23,160,102,0.12)" : "transparent", color: !includeCaseStudy ? T.greenLt : T.textSub, cursor: "pointer", fontSize: 12.5, fontWeight: 600, transition: "all 0.15s" }}>No</button>
+                      <button onClick={() => { setIncludeCaseStudy(true); if (!caseStudyText) handleGenerateCaseStudy(); }} style={{ padding: "6px 14px", borderRadius: 7, border: `1.5px solid ${includeCaseStudy ? T.green : T.border}`, background: includeCaseStudy ? "rgba(23,160,102,0.12)" : "transparent", color: includeCaseStudy ? T.greenLt : T.textSub, cursor: "pointer", fontSize: 12.5, fontWeight: 600, transition: "all 0.15s" }}>Yes</button>
                     </div>
                   </div>
                   {includeCaseStudy && (
-                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${T.border}` }}>
+                    <div style={{ padding: "14px 16px", borderTop: `1px solid ${T.border}`, background: "#0a1219" }}>
                       {caseStudyLoading ? (
-                        <div style={{ display: "flex", alignItems: "center", gap: 10, color: T.textMuted, fontSize: 13 }}>
-                          <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid rgba(255,255,255,0.2)", borderTopColor: T.greenLt, borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, color: T.textMuted, fontSize: 13, padding: "8px 0" }}>
+                          <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid rgba(255,255,255,0.2)", borderTopColor: T.greenLt, borderRadius: "50%", animation: "spin 0.7s linear infinite", flexShrink: 0 }} />
                           Selecting relevant case studies…
                         </div>
                       ) : caseStudyText ? (
                         <div>
-                          <textarea value={caseStudyText} onChange={e => setCaseStudyText(e.target.value)} rows={7} style={{ ...baseInput, fontSize: 12.5, lineHeight: 1.65, resize: "vertical" }} />
-                          <button onClick={handleGenerateCaseStudy} style={{ marginTop: 6, fontSize: 11.5, color: T.greenLt, background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}>↺ Regenerate</button>
+                          <textarea value={caseStudyText} onChange={e => setCaseStudyText(e.target.value)} rows={7} style={{ ...baseInput, fontSize: 12.5, lineHeight: 1.7, resize: "vertical", background: "#0d1520" }} />
+                          <button onClick={handleGenerateCaseStudy} style={{ marginTop: 8, fontSize: 11.5, color: T.greenLt, background: "rgba(23,160,102,0.06)", border: `1px solid rgba(23,160,102,0.2)`, cursor: "pointer", padding: "5px 12px", borderRadius: 6, fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>↺ Regenerate</button>
                         </div>
                       ) : null}
                     </div>
@@ -3084,7 +3409,7 @@ ${emailDraft.body}`)} style={{ marginLeft: "auto", fontSize: 11, color: T.greenL
           </div>
 
           {/* ── RIGHT: Live PDF preview panel (Concept D) ── */}
-          <div style={{ width: 340, flexShrink: 0, borderLeft: `1px solid ${T.border}`, background: "#1a2535", display: "flex", flexDirection: "column", position: "sticky", top: 60, height: "calc(100vh - 60px)" }}>
+          <div style={{ width: isMobile ? 0 : isTablet ? 280 : 340, flexShrink: 0, borderLeft: isMobile ? "none" : `1px solid ${T.border}`, background: "#1a2535", display: isMobile ? "none" : "flex", flexDirection: "column", position: "sticky", top: 60, height: "calc(100vh - 60px)", overflow: "hidden" }}>
             {/* Panel header */}
             <div style={{ padding: "12px 16px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", background: T.surface }}>
               <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
