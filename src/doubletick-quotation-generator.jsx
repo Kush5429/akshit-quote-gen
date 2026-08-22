@@ -1857,7 +1857,7 @@ Rules: No preamble. No closing line. No markdown. No asterisks. Start directly w
             <div style={{ textAlign: "right", fontSize: 10.5, color: INK2, lineHeight: 1.8 }}>
               <span style={{ color: INK, fontWeight: 600 }}>Apport Software Solutions Pvt. Ltd.</span><br />
               Mumbai, Maharashtra 400093, India<br />
-              kush.ambekar@doubletick.io &nbsp;·&nbsp; +91 79778 14709<br />
+              akshit.rastogi@quicksell.co &nbsp;·&nbsp; +91 7021112807<br />
               doubletick.io
             </div>
           </div>
@@ -2034,7 +2034,7 @@ Rules: No preamble. No closing line. No markdown. No asterisks. Start directly w
               <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 1.85, marginTop: 2 }}>
                 Office No. 3, 4th Floor, Second Avenue, Connekt Coworks,<br />
                 Subhash Nagar, Andheri East, Mumbai, Maharashtra — 400093<br />
-                kush.ambekar@quicksell.co &nbsp;&nbsp;|&nbsp;&nbsp; +91 79778 14709
+                akshit.rastogi@quicksell.co &nbsp;&nbsp;|&nbsp;&nbsp; +91 7021112807
               </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "center" }}>
